@@ -27,20 +27,20 @@ export async function getAdminService() {
 export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
   const service = await mod.getAdminService()
   let githubAccounts = new Set<string>()
-  let pageToken = null;
+  let pageToken = null
 
   do {
-      let params = {
+    let params = {
       customer: 'my_customer',
       maxResults: 250,
       projection: 'custom',
       fields: 'users(customSchemas/Accounts/github(value)),nextPageToken',
       customFieldMask: 'Accounts',
-      pageToken: pageToken
-      }
-      const userList = await service.users.list(params)
-      pageToken = userList.data.nextPageToken
-      githubAccounts = new Set([...githubAccounts, ...formatUserList(userList.data.users)])
+      pageToken: pageToken,
+    }
+    const userList = await service.users.list(params)
+    pageToken = userList.data.nextPageToken
+    githubAccounts = new Set([...githubAccounts, ...formatUserList(userList.data.users)])
   } while (pageToken != null)
   return githubAccounts
 }
