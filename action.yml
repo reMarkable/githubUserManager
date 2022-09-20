@@ -52,7 +52,7 @@ runs:
         PASSWORD: ${{ inputs.github-token }}
     - name: Run
       run: |
-        echo docker run --rm \
+        docker run --rm \
         -e GOOGLE_EMAIL_ADDRESS="$GOOGLE_EMAIL_ADDRESS" \
         -e GOOGLE_CREDENTIALS="$GOOGLE_CREDENTIALS" \
         -e ADD_USERS="$ADD_USERS" \
