@@ -46,7 +46,7 @@ runs:
   steps:
     - name: Login to docker.pkg.github.com
       shell: bash
-      run: echo ${PASSWORD} | docker login --username ${USERNAME} --password-stdin docker.pkg.github.com
+      run: echo ${PASSWORD} | docker login --username ${USERNAME} --password-stdin ghcr.io
       env:
         USERNAME: ${{ inputs.github-actor }}
         PASSWORD: ${{ inputs.github-token }}
@@ -76,4 +76,3 @@ runs:
         GITHUB_INSTALLATION_ID: ${{ inputs.github-installation-id }}
         GITHUB_PRIVATE_KEY: ${{ inputs.github-private-key }}
         IGNORED_USERS: ${{ inputs.ignored-users }}
-
