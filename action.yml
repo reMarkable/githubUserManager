@@ -44,9 +44,9 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Login to ghcr.io
+    - name: Login to docker.pkg.github.com
       shell: bash
-      run: echo ${PASSWORD} | docker login --username ${USERNAME} --password-stdin ghcr.io
+      run: echo ${PASSWORD} | docker login --username ${USERNAME} --password-stdin docker.pkg.github.com
       env:
         USERNAME: ${{ inputs.github-actor }}
         PASSWORD: ${{ inputs.github-token }}
@@ -63,7 +63,7 @@ runs:
         -e GITHUB_INSTALLATION_ID="$GITHUB_INSTALLATION_ID" \
         -e GITHUB_PRIVATE_KEY="$GITHUB_PRIVATE_KEY" \
         -e IGNORED_USERS="$IGNORED_USERS" \
-        ghcr.io/remarkable/githubusermanager:latest
+        docker.pkg.github.com/remarkable/githubusermanager/githubusermanager:v1.1.0
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
@@ -76,3 +76,4 @@ runs:
         GITHUB_INSTALLATION_ID: ${{ inputs.github-installation-id }}
         GITHUB_PRIVATE_KEY: ${{ inputs.github-private-key }}
         IGNORED_USERS: ${{ inputs.ignored-users }}
+
