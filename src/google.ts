@@ -45,10 +45,12 @@ export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function formatUserList(users): Set<string> {
+export function formatUserList(users: any[]): Set<string> {
   return new Set(
     users
-      .map((user) => user.customSchemas?.Accounts?.github?.map((account) => account.value?.toLowerCase()))
+      .map((user) =>
+        user.customSchemas?.Accounts?.github?.map((account: { value: string }) => account.value?.toLowerCase()),
+      )
       .flat()
       .filter(Boolean),
   )

@@ -44,7 +44,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Login to docker.pkg.github.com
+    - name: Login to ghcr.io
       shell: bash
       run: echo ${PASSWORD} | docker login --username ${USERNAME} --password-stdin ghcr.io
       env:
@@ -52,7 +52,7 @@ runs:
         PASSWORD: ${{ inputs.github-token }}
     - name: Run
       run: |
-        docker run --rm \
+        echo docker run --rm \
         -e GOOGLE_EMAIL_ADDRESS="$GOOGLE_EMAIL_ADDRESS" \
         -e GOOGLE_CREDENTIALS="$GOOGLE_CREDENTIALS" \
         -e ADD_USERS="$ADD_USERS" \
