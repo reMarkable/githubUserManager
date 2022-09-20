@@ -36,9 +36,7 @@ export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
       projection: 'custom',
       fields: 'users(customSchemas/Accounts/github(value)),nextPageToken',
       customFieldMask: 'Accounts',
-      }
-      if (pageToken) {
-        params['pageToken'] = pageToken
+      pageToken: pageToken
       }
       const userList = await service.users.list(params)
       pageToken = userList.data.nextPageToken
