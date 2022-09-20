@@ -30,15 +30,14 @@ export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
   let pageToken = null
 
   do {
-    let params = {
+    const userList = await service.users.list({
       customer: 'my_customer',
       maxResults: 250,
       projection: 'custom',
       fields: 'users(customSchemas/Accounts/github(value)),nextPageToken',
       customFieldMask: 'Accounts',
       pageToken: pageToken,
-    }
-    const userList = await service.users.list(params)
+    })
     pageToken = userList.data.nextPageToken
     githubAccounts = new Set([...githubAccounts, ...formatUserList(userList.data.users)])
   } while (pageToken != null)
