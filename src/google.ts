@@ -48,8 +48,9 @@ export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
 export function formatUserList(users: any[]): Set<string> {
   return new Set(
     users
-      .map((user) =>
-        user.customSchemas?.Accounts?.github?.map((account: { value: string }) => account.value?.toLowerCase()),
+      .map(
+        (user) =>
+          user.customSchemas?.Accounts?.github?.map((account: { value: string }) => account.value?.toLowerCase()),
       )
       .flat()
       .filter(Boolean),
