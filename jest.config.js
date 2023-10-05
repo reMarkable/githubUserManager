@@ -21,4 +21,9 @@ module.exports = {
     '!jest.config.js',
     '!wallaby.js',
   ],
+
+  snapshotFormat: {
+    escapeString: true,
+    printBasicPrototype: true,
+  },
 }
