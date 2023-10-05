@@ -26,7 +26,7 @@
     "@octokit/auth-app": "^4.0.0",
     "@octokit/rest": "^19.0.0",
     "@octokit/types": "9.3.2",
-    "googleapis": "^118.0.0",
+    "googleapis": "^126.0.0",
     "ts-node": "^10.4.0",
     "typescript": "^5.0.0"
   }
