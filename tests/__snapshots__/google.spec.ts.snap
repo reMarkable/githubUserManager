@@ -26,19 +26,19 @@ Set {
 
 exports[`google integration googleAuth 1`] = `
 [MockFunction] {
-  "calls": Array [
-    Array [
+  "calls": [
+    [
       "foo",
       null,
       "bar",
-      Array [
+      [
         "https://www.googleapis.com/auth/admin.directory.user.readonly",
       ],
       "hello@example.com",
     ],
   ],
-  "results": Array [
-    Object {
+  "results": [
+    {
       "type": "return",
       "value": undefined,
     },

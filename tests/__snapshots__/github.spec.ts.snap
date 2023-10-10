@@ -2,16 +2,16 @@
 
 exports[`github integration addUserToGitHubOrg 1`] = `
 [MockFunction] {
-  "calls": Array [
-    Array [
-      Object {
+  "calls": [
+    [
+      {
         "invitee_id": 123,
         "org": "myorg",
       },
     ],
   ],
-  "results": Array [
-    Object {
+  "results": [
+    {
       "type": "return",
       "value": Promise {},
     },
@@ -21,20 +21,20 @@ exports[`github integration addUserToGitHubOrg 1`] = `
 
 exports[`github integration addUsersToGitHubOrg 1`] = `
 [MockFunction] {
-  "calls": Array [
-    Array [
+  "calls": [
+    [
       "foo",
     ],
-    Array [
+    [
       "bar",
     ],
   ],
-  "results": Array [
-    Object {
+  "results": [
+    {
       "type": "return",
       "value": Promise {},
     },
-    Object {
+    {
       "type": "return",
       "value": Promise {},
     },
@@ -44,10 +44,10 @@ exports[`github integration addUsersToGitHubOrg 1`] = `
 
 exports[`github integration getAuthenticatedOctokit 1`] = `
 [MockFunction] {
-  "calls": Array [
-    Array [
-      Object {
-        "auth": Object {
+  "calls": [
+    [
+      {
+        "auth": {
           "appId": 123,
           "installationId": 123,
           "privateKey": "helloworld",
@@ -56,8 +56,8 @@ exports[`github integration getAuthenticatedOctokit 1`] = `
       },
     ],
   ],
-  "results": Array [
-    Object {
+  "results": [
+    {
       "type": "return",
       "value": undefined,
     },
@@ -81,16 +81,16 @@ exports[`github integration getUserIdFromUsername notfound 1`] = `"Unable to fin
 
 exports[`github integration removeUserFromGitHubOrg 1`] = `
 [MockFunction] {
-  "calls": Array [
-    Array [
-      Object {
+  "calls": [
+    [
+      {
         "org": "myorg",
         "username": "foo",
       },
     ],
   ],
-  "results": Array [
-    Object {
+  "results": [
+    {
       "type": "return",
       "value": Promise {},
     },
@@ -100,20 +100,20 @@ exports[`github integration removeUserFromGitHubOrg 1`] = `
 
 exports[`github integration removeUsersFromGitHubOrg 1`] = `
 [MockFunction] {
-  "calls": Array [
-    Array [
+  "calls": [
+    [
       "foo",
     ],
-    Array [
+    [
       "bar",
     ],
   ],
-  "results": Array [
-    Object {
+  "results": [
+    {
       "type": "return",
       "value": Promise {},
     },
-    Object {
+    {
       "type": "return",
       "value": Promise {},
     },
