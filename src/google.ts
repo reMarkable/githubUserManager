@@ -37,6 +37,7 @@ export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
       fields: 'users(customSchemas/Accounts/github(value)),nextPageToken',
       customFieldMask: 'Accounts',
       pageToken: pageToken,
+      query: config.removeSuspendedUsers ? 'isSuspended=false' : '',
     })
     pageToken = userList.data.nextPageToken
     githubAccounts = new Set([...githubAccounts, ...formatUserList(userList.data.users)])

@@ -32,6 +32,9 @@ export const config = {
   get googleEmailAddress(): string {
     return process.env.GOOGLE_EMAIL_ADDRESS ?? ''
   },
+  get removeSuspendedUsers(): boolean {
+    return process.env.REMOVE_SUSPENDED_USERS?.toLowerCase() === 'true'
+  },
 }
 
 export interface googleCredentials {
