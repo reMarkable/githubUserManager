@@ -156,3 +156,28 @@ describe('googleEmailAddress', () => {
     expect(mod.config.googleEmailAddress).toStrictEqual('hello')
   })
 })
+
+describe('removeSuspendedUsers', () => {
+  beforeEach(() => {
+    delete process.env.REMOVE_SUSPENDED_USERS
+  })
+  it('no value', () => {
+    expect(mod.config.removeSuspendedUsers).toStrictEqual(false)
+  })
+  it('invalid value', () => {
+    process.env.REMOVE_SUSPENDED_USERS = 'foobar'
+    expect(mod.config.removeSuspendedUsers).toStrictEqual(false)
+  })
+  it('false value', () => {
+    process.env.REMOVE_SUSPENDED_USERS = 'false'
+    expect(mod.config.removeSuspendedUsers).toStrictEqual(false)
+  })
+  it('true value', () => {
+    process.env.REMOVE_SUSPENDED_USERS = 'true'
+    expect(mod.config.removeSuspendedUsers).toStrictEqual(true)
+  })
+  it('true value mixed case', () => {
+    process.env.REMOVE_SUSPENDED_USERS = 'tRuE'
+    expect(mod.config.removeSuspendedUsers).toStrictEqual(true)
+  })
+})
