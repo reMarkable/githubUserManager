@@ -140,6 +140,7 @@ updates:
 | `GOOGLE_CREDENTIALS`     | Base64'd json as downloaded from the google service account creation step                                                       | `Zm9vCg==`        | `null`  |
 | `ADD_USERS`              | Set to TRUE to add users to the github organisation                                                                             | `TRUE`            | `false` |
 | `REMOVE_USERS`           | Set to TRUE to remove users from the github organisation                                                                        | `TRUE`            | `false` |
+| `REMOVE_SUSPENDED_USERS` | Set to TRUE to remove users from the github organisation that are suspended in Google                                           | `TRUE`            | `false` |
 | `EXIT_CODE_ON_MISMATCH`  | Exit code to use when there's a mismatch, useful when combined with `ADD_USERS` and `REMOVE_USERS` to be used in a dry-run mode | `1`               | `0`     |
 | `GITHUB_ORG`             | GitHub Organization                                                                                                             | `chrisnstest`     | `null`  |
 | `GITHUB_APP_ID`          | GitHub App ID                                                                                                                   | `106341`          | `null`  |
