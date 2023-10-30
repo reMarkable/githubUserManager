@@ -17,6 +17,9 @@ inputs:
   remove-users:
     description: 'Set to TRUE to remove users from the github organisation'
     required: false
+  remove-suspended_users:
+    description: 'Set to TRUE to remove suspended users from the github organisation'
+    required: false
   exit-code-on-missmatch:
     description: 'Exit code to use when there is a mismatch, useful when combined with `ADD_USERS` and `REMOVE_USERS` to be used in a dry-run mode'
     required: false
@@ -57,19 +60,21 @@ runs:
         -e GOOGLE_CREDENTIALS="$GOOGLE_CREDENTIALS" \
         -e ADD_USERS="$ADD_USERS" \
         -e REMOVE_USERS="$REMOVE_USERS" \
+        -e REMOVE_SUSPENDED_USERS="$REMOVE_SUSPENDED_USERS" \
         -e EXIT_CODE_ON_MISMATCH="$EXIT_CODE_ON_MISMATCH" \
         -e GITHUB_ORG="$GITHUB_ORG" \
         -e GITHUB_APP_ID="$GITHUB_APP_ID" \
         -e GITHUB_INSTALLATION_ID="$GITHUB_INSTALLATION_ID" \
         -e GITHUB_PRIVATE_KEY="$GITHUB_PRIVATE_KEY" \
         -e IGNORED_USERS="$IGNORED_USERS" \
-        docker.pkg.github.com/remarkable/githubusermanager/githubusermanager:v1.1.9
+        docker.pkg.github.com/remarkable/githubusermanager/githubusermanager:v1.3.1
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
         GOOGLE_CREDENTIALS: ${{ inputs.google-credentials }}
         ADD_USERS: ${{ inputs.add-users }}
         REMOVE_USERS: ${{ inputs.remove-users }}
+        REMOVE_SUSPENDED_USERS: ${{ inputs.remove-suspended_users }}
         EXIT_CODE_ON_MISMATCH: ${{ inputs.exit-code-on-missmatch }}
         GITHUB_ORG: ${{ inputs.github-org }}
         GITHUB_APP_ID: ${{ inputs.github-app-id }}
