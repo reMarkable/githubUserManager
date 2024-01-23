@@ -35,10 +35,9 @@ jobs:
         uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cef6c # v5.5.0
         with:
           images: docker.pkg.github.com/remarkable/githubUserManager/githubUserManager
-          tag-sha: true
-          tag-latest: true
-          tag-semver: |
-            {{version}}
+          tags: |
+            type=sha
+            type=semver,pattern={{version}}
           labels: |
             org.opencontainers.image.vendor=reMarkable
             org.opencontainers.image.documentation=https://github.com/reMarkable/githubUserManager
