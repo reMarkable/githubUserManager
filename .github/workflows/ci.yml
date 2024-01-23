@@ -39,7 +39,7 @@ jobs:
           tag-latest: true
           tag-semver: |
             {{version}}
-          label-custom: |
+          labels: |
             org.opencontainers.image.vendor=reMarkable
             org.opencontainers.image.documentation=https://github.com/reMarkable/githubUserManager
             org.opencontainers.image.authors=Marcus Ramberg <marcus.ramberg@remarkable.com>
