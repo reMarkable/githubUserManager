@@ -1,7 +1,38 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>reMarkable/renovate-config"
+    "config:recommended",
+    "group:allNonMajor",
+    "npm:unpublishSafe",
+    "regexManagers:dockerfileVersions"
   ],
+  "configMigration": true,
+  "npm": {
+    "rangeStrategy": "bump"
+  },
+  "packageRules": [
+    {
+      "description": "Update Docker base images and deps",
+      "matchDatasources": ["docker"],
+      "groupName": "dockerfile dependencies"
+    },
+    {
+      "matchDatasources": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "all non-major npm devDependencies"
+    },
+    {
+      "matchDatasources": ["npm"],
+      "minimumReleaseAge": "7 days",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "all non-major npm dependencies"
+    }
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "schedule": ["before 7am on the first day of the month"],
   "pinDigests": true
 }
