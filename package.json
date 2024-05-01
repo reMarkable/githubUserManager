@@ -23,11 +23,11 @@
     "ts-jest": "29.1.2"
   },
   "dependencies": {
-    "@octokit/auth-app": "^6.0.4",
-    "@octokit/rest": "^20.0.2",
-    "@octokit/types": "13.2.0",
+    "@octokit/auth-app": "^6.1.1",
+    "@octokit/rest": "^20.1.0",
+    "@octokit/types": "13.4.1",
     "googleapis": "^134.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.5"
   }
 }
