@@ -4,7 +4,7 @@
     "config:recommended",
     "group:allNonMajor",
     "npm:unpublishSafe",
-    "regexManagers:dockerfileVersions"
+    "customManagers:dockerfileVersions"
   ],
   "configMigration": true,
   "npm": {
