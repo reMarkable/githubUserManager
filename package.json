@@ -24,9 +24,9 @@
   },
   "dependencies": {
     "@octokit/auth-app": "^6.1.1",
-    "@octokit/rest": "^20.1.0",
-    "@octokit/types": "13.4.1",
-    "googleapis": "^135.0.0",
+    "@octokit/rest": "^20.1.1",
+    "@octokit/types": "13.5.0",
+    "googleapis": "^135.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
