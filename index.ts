@@ -35,4 +35,4 @@ export async function run(): Promise<void> {
 }
 
 // istanbul ignore next
-if (require.main === module) run()
+if (import.meta.url.endsWith(process.argv[1])) run()

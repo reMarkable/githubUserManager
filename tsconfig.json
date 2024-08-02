@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "resolveJsonModule": true,
     "declaration": true,
     "lib": ["es2020"],
     "target": "es2020",
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext"
   },
   "exclude": ["node_modules", "tests/**"]
 }
