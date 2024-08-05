@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals'
+
 jest.mock('@octokit/rest')
 import { Octokit } from '@octokit/rest'
 import { config } from '../src/config'
@@ -8,7 +10,7 @@ describe('github integration', () => {
     jest.spyOn(config, 'githubPrivateKey', 'get').mockReturnValue('helloworld')
     jest.spyOn(config, 'githubAppID', 'get').mockReturnValue(123)
     jest.spyOn(config, 'githubInstallationID', 'get').mockReturnValue(123)
-    jest.spyOn(global.console, 'log').mockImplementation()
+    jest.spyOn(global.console, 'log').mockImplementation(() => {})
   })
 
   it('getAuthenticatedOctokit', () => {
@@ -18,7 +20,7 @@ describe('github integration', () => {
   it('getGithubUsersFromGithub', () => {
     const fakeOctokit = {
       paginate: jest
-        .fn()
+        .fn<() => Promise<{ login: string }[]>>()
         .mockResolvedValueOnce([{ login: 'chrisns' }, { login: 'bar' }, { login: 'foo' }])
         .mockResolvedValueOnce([{ login: 'pending' }, { login: 'chrisns' }, { login: 'anotherpending' }]),
       orgs: { listMembers: jest.fn(), listPendingInvitations: jest.fn() },
@@ -30,7 +32,7 @@ describe('github integration', () => {
   it('getUserIdFromUsername found', () => {
     const fakeOctokit = {
       users: {
-        getByUsername: jest.fn().mockResolvedValue({ data: { id: 123 } }),
+        getByUsername: jest.fn<() => Promise<{ data: { id: number } }>>().mockResolvedValue({ data: { id: 123 } }),
       },
     }
     // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
@@ -41,7 +43,7 @@ describe('github integration', () => {
   it('getUserIdFromUsername notfound', () => {
     const fakeOctokit = {
       users: {
-        getByUsername: jest.fn().mockRejectedValue(new Error('not found')),
+        getByUsername: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('not found')),
       },
     }
     // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
@@ -76,7 +78,7 @@ describe('github integration', () => {
   it('addUserToGitHubOrg', async () => {
     const fakeOctokit = {
       orgs: {
-        createInvitation: jest.fn().mockResolvedValue(true),
+        createInvitation: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
       },
     }
     jest.spyOn(config, 'githubOrg', 'get').mockReturnValue('myorg')
@@ -90,7 +92,7 @@ describe('github integration', () => {
   it('removeUserFromGitHubOrg', async () => {
     const fakeOctokit = {
       orgs: {
-        removeMembershipForUser: jest.fn().mockResolvedValue(true),
+        removeMembershipForUser: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
       },
     }
     jest.spyOn(config, 'githubOrg', 'get').mockReturnValue('myorg')

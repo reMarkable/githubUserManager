@@ -1,17 +1,20 @@
-jest.mock('../src/google')
-jest.mock('../src/github')
-import * as google from '../src/google'
-import * as github from '../src/github'
-import * as mod from '../index'
+import { jest } from '@jest/globals'
 
-let processExitSpy: jest.SpyInstance
-let consoleSpy: jest.SpyInstance
+jest.mock('../src/google.js')
+jest.mock('../src/github.js')
+
+import * as google from '../src/google.js'
+import * as github from '../src/github.js'
+import * as mod from '../index.js'
+
+let processExitSpy
+let consoleSpy
 
 beforeEach(() => {
   processExitSpy = jest.spyOn(global.process, 'exit').mockImplementation(() => {
     return undefined as never
   })
-  consoleSpy = jest.spyOn(global.console, 'log').mockImplementation()
+  consoleSpy = jest.spyOn(global.console, 'log').mockImplementation(() => {})
 })
 
 describe('missmatch', () => {

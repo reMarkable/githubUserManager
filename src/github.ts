@@ -1,8 +1,9 @@
 import { createAppAuth } from '@octokit/auth-app'
 import { Octokit } from '@octokit/rest'
-import * as mod from './github'
-import { config } from './config'
-import { GetResponseTypeFromEndpointMethod } from '@octokit/types'
+
+import * as mod from './github.js'
+import { config } from './config.js'
+import type { GetResponseTypeFromEndpointMethod } from '@octokit/types'
 
 export function getAuthenticatedOctokit(): Octokit {
   return new Octokit({
