@@ -1,4 +1,7 @@
 module.exports = {
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
+  },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testEnvironment: 'node',
@@ -7,6 +10,7 @@ module.exports = {
   coverageDirectory: 'coverage',
   restoreMocks: true,
   resetMocks: true,
+
   collectCoverageFrom: [
     '**/*.ts',
     '**/*.js',
@@ -15,5 +19,6 @@ module.exports = {
     '!node_modules/**',
     '!coverage/**',
     '!jest.config.js',
+    '!wallaby.js',
   ],
 }
