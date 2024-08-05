@@ -1,4 +1,7 @@
+import { jest } from '@jest/globals'
+
 jest.mock('googleapis')
+
 import { google } from 'googleapis'
 import * as mod from '../src/google'
 
@@ -22,13 +25,14 @@ describe('google integration', () => {
     process.env.GOOGLE_CREDENTIALS = Buffer.from(JSON.stringify({ client_email: 'foo', private_key: 'bar' })).toString(
       'base64',
     )
-    jest.spyOn(global.console, 'log').mockImplementation()
+    jest.spyOn(global.console, 'log').mockImplementation(() => {})
   })
   it('googleAuth', () => {
     mod.googleAuth()
     return expect(google.auth.JWT).toMatchSnapshot()
   })
   it('getAdminService', () => {
+    // FIXME: TypeError: google.admin.mockReturnValue is not a function
     // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
     google.admin.mockReturnValue('adminservice')
     const result = mod.getAdminService()
@@ -36,7 +40,14 @@ describe('google integration', () => {
   })
 
   it('getGithubUsersFromGoogle', () => {
-    const service = { users: { list: jest.fn().mockResolvedValue({ data: { users: fakeUsersResponse } }) } }
+    const service = {
+      users: {
+        list: jest
+          .fn<() => Promise<{ data: { users: typeof fakeUsersResponse } }>>()
+          .mockResolvedValue({ data: { users: fakeUsersResponse } }),
+      },
+    }
+    // FIXME: TypeError: Cannot assign to read only property 'getAdminService' of object '[object Module]'
     // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
     jest.spyOn(mod, 'getAdminService').mockResolvedValue(service)
 

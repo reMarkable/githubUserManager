@@ -6,7 +6,8 @@
     "target": "es2020",
     "downlevelIteration": true,
     "moduleResolution": "NodeNext",
-    "module": "NodeNext"
+    "module": "NodeNext",
+    "noEmit": true
   },
   "exclude": ["node_modules", "tests/**"]
 }

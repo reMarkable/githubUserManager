@@ -1,6 +1,6 @@
-import { getGithubUsersFromGoogle } from './src/google'
-import { getGithubUsersFromGithub, addUsersToGitHubOrg, removeUsersFromGitHubOrg } from './src/github'
-import { config } from './src/config'
+import { getGithubUsersFromGoogle } from './src/google.js'
+import { getGithubUsersFromGithub, addUsersToGitHubOrg, removeUsersFromGitHubOrg } from './src/github.js'
+import { config } from './src/config.js'
 
 export async function run(): Promise<void> {
   const googleUsers = await getGithubUsersFromGoogle()
