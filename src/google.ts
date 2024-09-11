@@ -51,7 +51,7 @@ export function formatUserList(users: any[]): Set<string> {
   return new Set(
     users
       .map((user) =>
-        user.customSchemas?.Accounts?.github?.map((account: { value: string }) => account.value?.toLowerCase()),
+        user.customSchemas?.Accounts?.github?.map((account: { value: string }) => account.value?.toLowerCase().trim()),
       )
       .flat()
       .filter(Boolean),

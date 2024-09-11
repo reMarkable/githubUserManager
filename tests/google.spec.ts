@@ -66,6 +66,7 @@ describe('google integration', () => {
         { customSchemas: { Accounts: { github: [] } } },
         { customSchemas: { Accounts: { github: [{}] } } },
         { customSchemas: { Accounts: { github: [{ value: 'chrisns' }] } } },
+        { customSchemas: { Accounts: { github: [{ value: 'userspace ' }] } } },
       ]),
     ).toMatchSnapshot())
 })

@@ -12,6 +12,7 @@ Set {
 exports[`google integration formatUserList bad 1`] = `
 Set {
   "chrisns",
+  "userspace",
 }
 `;
 
