@@ -51,6 +51,7 @@ export async function getUserIdFromUsername(username: string): Promise<number> {
   let user
   try {
     user = await octokit.users.getByUsername({ username })
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     throw `Unable to find user id for ${username}`
   }
