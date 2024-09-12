@@ -37,7 +37,7 @@ jobs:
           images: docker.pkg.github.com/remarkable/githubUserManager/githubUserManager
           tags: |
             type=sha
-            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
           labels: |
             org.opencontainers.image.vendor=reMarkable
             org.opencontainers.image.documentation=https://github.com/reMarkable/githubUserManager
