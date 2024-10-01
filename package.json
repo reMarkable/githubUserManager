@@ -18,7 +18,7 @@
     "@octokit/rest": "^21.0.2",
     "@octokit/types": "13.5.0",
     "googleapis": "^144.0.0",
-    "tsx": "^4.19.0",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.2"
   },
   "devDependencies": {
