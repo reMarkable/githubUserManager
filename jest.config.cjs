@@ -3,6 +3,7 @@
 // If you add any third party ESM only modules from npm, be sure to add them here:
 const ESM_MODULES = ['@octokit/.*', 'before-after-hook', 'universal-github-app-jwt', 'universal-user-agent']
 
+// eslint-disable-next-line no-undef
 module.exports = {
   coverageReporters: ['lcovonly', 'text'],
   collectCoverage: true,

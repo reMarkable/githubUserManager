@@ -1,9 +1,8 @@
 import { createAppAuth } from '@octokit/auth-app'
-import { Octokit } from '@octokit/rest'
+import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest'
 
 import * as mod from './github.js'
 import { config } from './config.js'
-import type { GetResponseTypeFromEndpointMethod } from '@octokit/types'
 
 export function getAuthenticatedOctokit(): Octokit {
   return new Octokit({
@@ -35,7 +34,6 @@ export async function getGithubUsersFromGithub(): Promise<Set<string>> {
   return new Set([...githubAccounts, ...pendingGithubAccounts])
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function formatUserList(users): Set<string> {
   return new Set(
     users
@@ -65,10 +63,9 @@ export async function addUsersToGitHubOrg(users: Set<string>): Promise<void> {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export async function addUserToGitHubOrg(
   user: string,
-): Promise<GetResponseTypeFromEndpointMethod<typeof octokit.orgs.createInvitation> | boolean> {
+): Promise<RestEndpointMethodTypes['orgs']['createInvitation']['response'] | boolean> {
   const octokit = mod.getAuthenticatedOctokit()
   if (config.ignoredUsers.includes(user.toLowerCase())) {
     console.log(`Ignoring add for ${user}`)
@@ -88,10 +85,9 @@ export async function removeUsersFromGitHubOrg(users: Set<string>): Promise<void
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export async function removeUserFromGitHubOrg(
   user: string,
-): Promise<GetResponseTypeFromEndpointMethod<typeof octokit.orgs.removeMembershipForUser> | boolean> {
+): Promise<RestEndpointMethodTypes['orgs']['removeMembershipForUser']['response'] | boolean> {
   const octokit = mod.getAuthenticatedOctokit()
   if (config.ignoredUsers.includes(user.toLowerCase())) {
     console.log(`Ignoring remove for ${user}`)

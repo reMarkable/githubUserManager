@@ -3,7 +3,6 @@ import { google } from 'googleapis'
 import * as mod from './google.js'
 import { config } from './config.js'
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export async function googleAuth() {
   const { googleCredentials, googleEmailAddress } = config
   const jwtClient = new google.auth.JWT(
@@ -17,7 +16,6 @@ export async function googleAuth() {
   return jwtClient
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export async function getAdminService() {
   return google.admin({
     version: 'directory_v1',
