@@ -9,7 +9,7 @@ const fakeUsersResponse = [
   { customSchemas: { Accounts: { github: [{ value: 'chrisns' }] } } },
   {
     customSchemas: {
-      Accounts: { github: [{ value: 'Foo' }, , { value: 'tar' }] },
+      Accounts: { github: [{ value: 'Foo' }, { value: 'tar' }] },
     },
   },
   {
