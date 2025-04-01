@@ -16,7 +16,7 @@
   "dependencies": {
     "@octokit/auth-app": "^7.1.4",
     "@octokit/rest": "^21.1.0",
-    "googleapis": "^144.0.0",
+    "googleapis": "^148.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },
