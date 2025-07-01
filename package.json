@@ -14,8 +14,8 @@
     "test": "jest --runInBand --collectCoverage=false"
   },
   "dependencies": {
-    "@octokit/auth-app": "^7.2.1",
-    "@octokit/rest": "^21.1.1",
+    "@octokit/auth-app": "^8.0.1",
+    "@octokit/rest": "^22.0.0",
     "googleapis": "^150.0.1",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
