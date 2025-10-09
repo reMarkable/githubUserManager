@@ -3,7 +3,7 @@
   "extends": [
     "config:recommended",
     "group:allNonMajor",
-    "npm:unpublishSafe",
+    "security:minimumReleaseAgeNpm",
     "customManagers:dockerfileVersions"
   ],
   "configMigration": true,
