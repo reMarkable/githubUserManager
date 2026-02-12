@@ -71,7 +71,14 @@ export async function addUserToGitHubOrg(
     console.log(`Ignoring add for ${user}`)
     return false
   }
-  const userId = await mod.getUserIdFromUsername(user)
+  let userId: number
+  try {
+    userId = await mod.getUserIdFromUsername(user)
+  } catch (error) {
+    console.log(`Unable to find user id for ${user}, skipping invite`)
+    return false
+  }
+
   console.log(`Inviting ${user} (${userId} to ${config.githubOrg})`)
   return await octokit.orgs.createInvitation({
     org: config.githubOrg,
