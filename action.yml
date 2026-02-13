@@ -38,21 +38,9 @@ inputs:
   ignored-users:
     description: 'Comma separated list of user ids to totally ignore always, useful for owners of an org you do not want accidentally removed'
     required: false
-  github-token:
-    description: github token to use to pull the docker image secrets.GITHUB_TOKEN is probably fine
-    required: true
-  github-actor:
-    description: github actor to use to pull the docker image github.actor is probably fine
-    required: true
 runs:
   using: "composite"
   steps:
-    - name: Login to docker.pkg.github.com
-      shell: bash
-      run: echo ${PASSWORD} | docker login --username ${USERNAME} --password-stdin docker.pkg.github.com
-      env:
-        USERNAME: ${{ inputs.github-actor }}
-        PASSWORD: ${{ inputs.github-token }}
     - name: Run
       run: |
         docker run --rm \
@@ -67,7 +55,7 @@ runs:
         -e GITHUB_INSTALLATION_ID="$GITHUB_INSTALLATION_ID" \
         -e GITHUB_PRIVATE_KEY="$GITHUB_PRIVATE_KEY" \
         -e IGNORED_USERS="$IGNORED_USERS" \
-        docker.pkg.github.com/remarkable/githubusermanager/githubusermanager:v1.3.2
+        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.3.2
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
