@@ -18,7 +18,7 @@
     "@octokit/rest": "^22.0.1",
     "googleapis": "^171.4.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.29.0",
