@@ -14,7 +14,7 @@
   "rules": {
     "no-console": "off",
     "func-style": "off",
-    "no-eq-null": "off",
+    "no-eq-null": "off"
   },
   "overrides": [
     {

@@ -10,6 +10,7 @@
     "check-types": "tsc",
     "lint": "oxlint .",
     "lint-fix": "oxlint --fix .",
+    "format": "oxfmt .",
     "start": "tsx index.ts",
     "test": "jest --runInBand --collectCoverage=false"
   },
@@ -26,6 +27,7 @@
     "@types/jest": "30.0.0",
     "babel-plugin-transform-import-meta": "^2.3.3",
     "jest": "30.3.0",
+    "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
     "oxlint-tsgolint": "^0.21.1"
   }
