@@ -55,7 +55,7 @@ runs:
         -e GITHUB_INSTALLATION_ID="$GITHUB_INSTALLATION_ID" \
         -e GITHUB_PRIVATE_KEY="$GITHUB_PRIVATE_KEY" \
         -e IGNORED_USERS="$IGNORED_USERS" \
-        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.3.2
+        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.4.0
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
