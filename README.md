@@ -16,7 +16,6 @@ Right now this only handles the organization membership, it **does not** touch t
 ### Collect the secrets
 
 1.  [Add a custom attribute on the users](https://support.google.com/a/answer/6208725?hl=en#zippy=%2Cadd-a-new-custom-attribute)
-
     1. Go to https://admin.google.com/ac/customschema
     1. Enter
        - Category: `Accounts`
@@ -28,7 +27,6 @@ Right now this only handles the organization membership, it **does not** touch t
          - no. of values: `multi-value`
 
 1.  [Add values to custom attributes for the users](https://support.google.com/a/answer/6208725?hl=en#add_value)
-
     1.  Go to https://admin.google.com/ac/users
     1.  Click a user to edit them
     1.  Click 'user information'
@@ -37,10 +35,8 @@ Right now this only handles the organization membership, it **does not** touch t
     1.  Click Save
 
 1.  [Make a gcp project](https://console.cloud.google.com/projectcreate)
-
     1. Enable the [Admin SDK API](https://console.cloud.google.com/apis/library/admin.googleapis.com?q=workspace%20admin&id=d0a160dd-c410-4fd0-a951-c47e05309cb9)
     1. [Create credentials](https://console.cloud.google.com/apis/credentials/wizard?project=githubusermanager)
-
     - Which API are you using?: `Admin SDK API`
     - Are you planning to use this API with App Engine or Compute Engine: `no`
     - Service account name: `githubusermanager`
@@ -49,9 +45,7 @@ Right now this only handles the organization membership, it **does not** touch t
     - Click `Continue`, then confirm `CREATE WITHOUT ROLE`
     - Edit the user, Click `Enable G Suite domain-wide delegation`
     - Product name for the consent screen: `githubusermanager`
-
     1. [Delegate domain-wide authority to your service account](https://developers.google.com/admin-sdk/directory/v1/guides/delegation)
-
     - https://admin.google.com/ac/owl/domainwidedelegation
     - Client ID: `client id from user`
     - OAuth scopes:

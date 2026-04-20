@@ -39,7 +39,7 @@ inputs:
     description: 'Comma separated list of user ids to totally ignore always, useful for owners of an org you do not want accidentally removed'
     required: false
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Run
       run: |
@@ -69,4 +69,3 @@ runs:
         GITHUB_INSTALLATION_ID: ${{ inputs.github-installation-id }}
         GITHUB_PRIVATE_KEY: ${{ inputs.github-private-key }}
         IGNORED_USERS: ${{ inputs.ignored-users }}
-

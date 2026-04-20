@@ -26,7 +26,9 @@ export async function run(): Promise<void> {
 
   if (usersNotInGithub.size > 0) {
     console.log(`Users not in github: ${[...usersNotInGithub].join(', ')}`)
-    if (config.addUsers) {await addUsersToGitHubOrg(usersNotInGithub)}
+    if (config.addUsers) {
+      await addUsersToGitHubOrg(usersNotInGithub)
+    }
   }
 
   const exitCode = usersNotInGoogle.size > 0 || usersNotInGithub.size > 0 ? config.exitCodeOnMissmatch : 0
@@ -36,4 +38,6 @@ export async function run(): Promise<void> {
 }
 
 // istanbul ignore next
-if (import.meta.url.endsWith(process.argv[1])) {run()}
+if (import.meta.url.endsWith(process.argv[1])) {
+  run()
+}
