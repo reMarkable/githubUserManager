@@ -36,10 +36,11 @@ export function formatUserList(users: any[]): Set<string> {
 export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
   const service = await mod.getAdminService()
   let githubAccounts = new Set<string>()
-  let pageToken = null
+    // oxlint-disable-next-line no-undefined
+  let pageToken: string | undefined = undefined
 
   do {
-    const userList = await service.users.list({
+    const userList: { data: admin_directory_v1.Schema$Users } = await service.users.list({
       customFieldMask: 'Accounts',
       customer: 'my_customer',
       fields: 'users(customSchemas/Accounts/github(value)),nextPageToken',
@@ -48,8 +49,9 @@ export async function getGithubUsersFromGoogle(): Promise<Set<string>> {
       projection: 'custom',
       query: config.removeSuspendedUsers ? 'isSuspended=false' : '',
     })
-    pageToken = userList.data.nextPageToken
-    githubAccounts = new Set([...githubAccounts, ...formatUserList(userList.data.users)])
+    // oxlint-disable-next-line no-undefined
+    pageToken = userList.data.nextPageToken ?? undefined
+    githubAccounts = new Set([...githubAccounts, ...formatUserList(userList.data.users ?? [])])
   } while (pageToken != null)
   return githubAccounts
 }
