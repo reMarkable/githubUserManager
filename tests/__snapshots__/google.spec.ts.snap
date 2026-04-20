@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`google integration formatUserList 1`] = `
+exports[`google integration > formatUserList 1`] = `
 Set {
   "chrisns",
   "foo",
@@ -9,14 +9,14 @@ Set {
 }
 `;
 
-exports[`google integration formatUserList bad 1`] = `
+exports[`google integration > formatUserList bad 1`] = `
 Set {
   "chrisns",
   "userspace",
 }
 `;
 
-exports[`google integration getGithubUsersFromGoogle 1`] = `
+exports[`google integration > getGithubUsersFromGoogle 1`] = `
 Set {
   "chrisns",
   "foo",
@@ -25,7 +25,7 @@ Set {
 }
 `;
 
-exports[`google integration googleAuth 1`] = `
+exports[`google integration > googleAuth 1`] = `
 [MockFunction] {
   "calls": [
     [
@@ -42,7 +42,33 @@ exports[`google integration googleAuth 1`] = `
   "results": [
     {
       "type": "return",
-      "value": undefined,
+      "value": Mock {
+        "authorize": [MockFunction] {
+          "calls": [
+            [],
+          ],
+          "results": [
+            {
+              "type": "return",
+              "value": undefined,
+            },
+          ],
+        },
+        "authorizeAsync": [MockFunction],
+        "constructor": [MockFunction],
+        "createGToken": [MockFunction],
+        "createScoped": [MockFunction],
+        "fetchIdToken": [MockFunction],
+        "fromAPIKey": [MockFunction],
+        "fromJSON": [MockFunction],
+        "fromStream": [MockFunction],
+        "fromStreamAsync": [MockFunction],
+        "getCredentials": [MockFunction],
+        "getRequestMetadataAsync": [MockFunction],
+        "hasAnyScopes": [MockFunction],
+        "hasUserScopes": [MockFunction],
+        "refreshTokenNoCache": [MockFunction],
+      },
     },
   ],
 }

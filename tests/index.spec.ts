@@ -1,7 +1,5 @@
-import { jest } from '@jest/globals'
-
-jest.mock('../src/google.js')
-jest.mock('../src/github.js')
+vi.mock('../src/google.js')
+vi.mock('../src/github.js')
 
 import * as google from '../src/google.js'
 import * as github from '../src/github.js'
@@ -11,8 +9,8 @@ let processExitSpy
 let consoleSpy
 
 beforeEach(() => {
-  processExitSpy = jest.spyOn(global.process, 'exit').mockImplementation(() => undefined as never)
-  consoleSpy = jest.spyOn(global.console, 'log').mockImplementation(() => {})
+  processExitSpy = vi.spyOn(global.process, 'exit').mockImplementation(() => undefined as never)
+  consoleSpy = vi.spyOn(global.console, 'log').mockImplementation(() => {})
 })
 
 describe('missmatch', () => {

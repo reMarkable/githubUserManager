@@ -1,8 +1,8 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ignoredUsers getIgnoredUsers empty 1`] = `[]`;
+exports[`ignoredUsers > getIgnoredUsers empty 1`] = `[]`;
 
-exports[`ignoredUsers getIgnoredUsers many 1`] = `
+exports[`ignoredUsers > getIgnoredUsers many 1`] = `
 [
   "user1",
   "user2",
@@ -11,7 +11,7 @@ exports[`ignoredUsers getIgnoredUsers many 1`] = `
 ]
 `;
 
-exports[`ignoredUsers getIgnoredUsers single 1`] = `
+exports[`ignoredUsers > getIgnoredUsers single 1`] = `
 [
   "user1",
 ]

@@ -1,6 +1,4 @@
-import { jest } from '@jest/globals'
-
-jest.mock('googleapis')
+vi.mock('googleapis')
 
 import { google } from 'googleapis'
 import * as mod from '../src/google'
@@ -25,7 +23,7 @@ describe('google integration', () => {
     process.env.GOOGLE_CREDENTIALS = Buffer.from(JSON.stringify({ client_email: 'foo', private_key: 'bar' })).toString(
       'base64',
     )
-    jest.spyOn(global.console, 'log').mockImplementation(() => {})
+    vi.spyOn(global.console, 'log').mockImplementation(() => {})
   })
   it('googleAuth', () => {
     mod.googleAuth()
@@ -39,20 +37,20 @@ describe('google integration', () => {
     return expect(result).resolves.toBe('adminservice')
   })
 
-  it('getGithubUsersFromGoogle', () => {
+  it('getGithubUsersFromGoogle', async () => {
     const service = {
       users: {
-        list: jest
+        list: vi
           .fn<() => Promise<{ data: { users: typeof fakeUsersResponse } }>>()
           .mockResolvedValue({ data: { users: fakeUsersResponse } }),
       },
     }
     // FIXME: TypeError: Cannot assign to read only property 'getAdminService' of object '[object Module]'
     // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
-    jest.spyOn(mod, 'getAdminService').mockResolvedValue(service)
+    vi.spyOn(mod, 'getAdminService').mockResolvedValue(service)
 
     const result = mod.getGithubUsersFromGoogle()
-    expect(result).resolves.toMatchSnapshot()
+    await expect(result).resolves.toMatchSnapshot()
   })
 
   it('formatUserList', () => expect(mod.formatUserList(fakeUsersResponse)).toMatchSnapshot())

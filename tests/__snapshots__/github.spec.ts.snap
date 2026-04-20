@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`github integration addUserToGitHubOrg 1`] = `
+exports[`github integration > addUserToGitHubOrg 1`] = `
 [MockFunction] {
   "calls": [
     [
@@ -19,8 +19,8 @@ exports[`github integration addUserToGitHubOrg 1`] = `
 }
 `;
 
-exports[`github integration addUsersToGitHubOrg 1`] = `
-[MockFunction] {
+exports[`github integration > addUsersToGitHubOrg 1`] = `
+[MockFunction addUserToGitHubOrg] {
   "calls": [
     [
       "foo",
@@ -42,7 +42,7 @@ exports[`github integration addUsersToGitHubOrg 1`] = `
 }
 `;
 
-exports[`github integration getAuthenticatedOctokit 1`] = `
+exports[`github integration > getAuthenticatedOctokit 1`] = `
 [MockFunction] {
   "calls": [
     [
@@ -59,13 +59,15 @@ exports[`github integration getAuthenticatedOctokit 1`] = `
   "results": [
     {
       "type": "return",
-      "value": undefined,
+      "value": Mock {
+        "constructor": [MockFunction],
+      },
     },
   ],
 }
 `;
 
-exports[`github integration getGithubUsersFromGithub 1`] = `
+exports[`github integration > getGithubUsersFromGithub 1`] = `
 Set {
   "chrisns",
   "bar",
@@ -75,11 +77,11 @@ Set {
 }
 `;
 
-exports[`github integration getUserIdFromUsername found 1`] = `123`;
+exports[`github integration > getUserIdFromUsername found 1`] = `123`;
 
-exports[`github integration getUserIdFromUsername notfound 1`] = `"Unable to find user id for foo"`;
+exports[`github integration > getUserIdFromUsername notfound 1`] = `"Unable to find user id for foo"`;
 
-exports[`github integration removeUserFromGitHubOrg 1`] = `
+exports[`github integration > removeUserFromGitHubOrg 1`] = `
 [MockFunction] {
   "calls": [
     [
@@ -98,8 +100,8 @@ exports[`github integration removeUserFromGitHubOrg 1`] = `
 }
 `;
 
-exports[`github integration removeUsersFromGitHubOrg 1`] = `
-[MockFunction] {
+exports[`github integration > removeUsersFromGitHubOrg 1`] = `
+[MockFunction removeUserFromGitHubOrg] {
   "calls": [
     [
       "foo",
