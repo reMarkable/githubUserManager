@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "restriction": "error",
+    "style": "off",
+    "perf": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "rules": {
+    "no-console": "off",
+    "func-style": "off",
+    "no-eq-null": "off",
+  },
+  "overrides": [
+    {
+      "files": ["tests/**"],
+      "rules": {
+        "no-magic-numbers": "off",
+        "max-statements": "off",
+        "prefer-global-this": "off",
+        "init-declarations": "off",
+        "no-empty-function": "off",
+        "no-undefined": "off"
+      }
+    }
+  ]
+}
