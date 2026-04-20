@@ -12,7 +12,7 @@
     "lint-fix": "oxlint --fix .",
     "format": "oxfmt .",
     "start": "tsx index.ts",
-    "test": "jest --runInBand --collectCoverage=false"
+    "test": "vitest --config vitest.config.ts"
   },
   "dependencies": {
     "@octokit/auth-app": "^8.2.0",
@@ -22,13 +22,10 @@
     "typescript": "^6.0.2"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.29.2",
-    "@babel/preset-typescript": "^7.28.5",
-    "@types/jest": "30.0.0",
-    "babel-plugin-transform-import-meta": "^2.3.3",
-    "jest": "30.3.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
-    "oxlint-tsgolint": "^0.21.1"
+    "oxlint-tsgolint": "^0.21.1",
+    "vitest": "^4.1.4"
   }
 }

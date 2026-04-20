@@ -1,7 +1,7 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`match should have consistent console output 1`] = `
-[MockFunction] {
+exports[`match > should have consistent console output 1`] = `
+[MockFunction log] {
   "calls": [
     [
       "Users from google: a, b, c, d",
@@ -23,7 +23,7 @@ exports[`match should have consistent console output 1`] = `
 }
 `;
 
-exports[`missmatch should add users if set to 1`] = `
+exports[`missmatch > should add users if set to 1`] = `
 [MockFunction] {
   "calls": [
     [
@@ -41,8 +41,8 @@ exports[`missmatch should add users if set to 1`] = `
 }
 `;
 
-exports[`missmatch should have consistent console output 1`] = `
-[MockFunction] {
+exports[`missmatch > should have consistent console output 1`] = `
+[MockFunction log] {
   "calls": [
     [
       "Users from google: a, d",
@@ -78,8 +78,8 @@ exports[`missmatch should have consistent console output 1`] = `
 }
 `;
 
-exports[`missmatch should have consistent console output with full destructive mode on 1`] = `
-[MockFunction] {
+exports[`missmatch > should have consistent console output with full destructive mode on 1`] = `
+[MockFunction log] {
   "calls": [
     [
       "Users from google: a, d",
@@ -115,7 +115,7 @@ exports[`missmatch should have consistent console output with full destructive m
 }
 `;
 
-exports[`missmatch should remove users if set to 1`] = `
+exports[`missmatch > should remove users if set to 1`] = `
 [MockFunction] {
   "calls": [
     [
