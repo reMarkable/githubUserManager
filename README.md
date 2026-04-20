@@ -123,8 +123,8 @@ updates:
 #### node/lambda/cloud run/ something else
 
 1.  Clone this repo
-1.  `npm install --production`
-1.  `npm start` (with the with the [below environment variables table](#Setup-environment-variables) set)
+1.  `pnpm install --production`
+1.  `pnpm start` (with the with the [below environment variables table](#Setup-environment-variables) set)
 
 ### Setup environment variables
 

@@ -1,8 +1,9 @@
 FROM node:24.14.1-alpine@sha256:01743339035a5c3c11a373cd7c83aeab6ed1457b55da6a69e014a95ac4e4700b
 
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install --production
+RUN corepack enable && echo yo
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --production --frozen-lockfile
 COPY . .
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
