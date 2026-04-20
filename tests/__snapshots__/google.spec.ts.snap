@@ -29,13 +29,14 @@ exports[`google integration googleAuth 1`] = `
 [MockFunction] {
   "calls": [
     [
-      "foo",
-      null,
-      "bar",
-      [
-        "https://www.googleapis.com/auth/admin.directory.user.readonly",
-      ],
-      "hello@example.com",
+      {
+        "email": "foo",
+        "key": "bar",
+        "scopes": [
+          "https://www.googleapis.com/auth/admin.directory.user.readonly",
+        ],
+        "subject": "hello@example.com",
+      },
     ],
   ],
   "results": [

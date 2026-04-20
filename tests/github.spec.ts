@@ -19,11 +19,11 @@ describe('github integration', () => {
   })
   it('getGithubUsersFromGithub', () => {
     const fakeOctokit = {
+      orgs: { listMembers: jest.fn(), listPendingInvitations: jest.fn() },
       paginate: jest
         .fn<() => Promise<{ login: string }[]>>()
         .mockResolvedValueOnce([{ login: 'chrisns' }, { login: 'bar' }, { login: 'foo' }])
         .mockResolvedValueOnce([{ login: 'pending' }, { login: 'chrisns' }, { login: 'anotherpending' }]),
-      orgs: { listMembers: jest.fn(), listPendingInvitations: jest.fn() },
     }
     // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
     jest.spyOn(mod, 'getAuthenticatedOctokit').mockReturnValue(fakeOctokit)

@@ -3,11 +3,8 @@
 // If you add any third party ESM only modules from npm, be sure to add them here:
 const ESM_MODULES = ['@octokit/.*', 'before-after-hook', 'universal-github-app-jwt', 'universal-user-agent']
 
-// eslint-disable-next-line no-undef
 module.exports = {
-  coverageReporters: ['lcovonly', 'text'],
   collectCoverage: true,
-  coverageDirectory: 'coverage',
   collectCoverageFrom: [
     '**/*.ts',
     '**/*.js',
@@ -17,12 +14,14 @@ module.exports = {
     '!coverage/**',
     '!jest.config.js',
   ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['lcovonly', 'text'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  restoreMocks: true,
   resetMocks: true,
+  restoreMocks: true,
   testEnvironment: 'node',
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
   transformIgnorePatterns: [`/node_modules/(?!(${ESM_MODULES.join('|')})/)`],

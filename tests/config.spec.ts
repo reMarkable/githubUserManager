@@ -102,11 +102,11 @@ describe('githubAppID', () => {
     delete process.env.GITHUB_APP_ID
   })
   it('no value', () => {
-    expect(mod.config.githubAppID).toStrictEqual(NaN)
+    expect(mod.config.githubAppID).toStrictEqual(Number.NaN)
   })
   it('invalid value', () => {
     process.env.GITHUB_APP_ID = 'hello'
-    expect(mod.config.githubAppID).toStrictEqual(NaN)
+    expect(mod.config.githubAppID).toStrictEqual(Number.NaN)
   })
   it('valid value', () => {
     process.env.GITHUB_APP_ID = '123'
@@ -119,11 +119,11 @@ describe('githubInstallationID', () => {
     delete process.env.GITHUB_INSTALLATION_ID
   })
   it('no value', () => {
-    expect(mod.config.githubInstallationID).toStrictEqual(NaN)
+    expect(mod.config.githubInstallationID).toStrictEqual(Number.NaN)
   })
   it('invalid value', () => {
     process.env.GITHUB_INSTALLATION_ID = 'hello'
-    expect(mod.config.githubInstallationID).toStrictEqual(NaN)
+    expect(mod.config.githubInstallationID).toStrictEqual(Number.NaN)
   })
   it('valid value', () => {
     process.env.GITHUB_INSTALLATION_ID = '123'

@@ -6,13 +6,17 @@ import { config } from './config.js'
 
 export function getAuthenticatedOctokit(): Octokit {
   return new Octokit({
-    authStrategy: createAppAuth,
     auth: {
       appId: config.githubAppID,
-      privateKey: config.githubPrivateKey,
       installationId: config.githubInstallationID,
+      privateKey: config.githubPrivateKey,
     },
+    authStrategy: createAppAuth,
   })
+}
+
+export function formatUserList(users: { login?: string | null }[]): Set<string> {
+  return new Set(users.flatMap((user) => user.login?.toLowerCase()).filter((x): x is string => Boolean(x)))
 }
 
 export async function getGithubUsersFromGithub(): Promise<Set<string>> {
@@ -28,19 +32,11 @@ export async function getGithubUsersFromGithub(): Promise<Set<string>> {
 
   const githubAccounts = formatUserList(members)
 
-  if (pendingGithubAccounts.size > 0)
-    console.log(`Outstanding GitHub invites for ${Array.from(pendingGithubAccounts).join(', ')}`)
+  if (pendingGithubAccounts.size > 0) {
+    console.log(`Outstanding GitHub invites for ${[...pendingGithubAccounts].join(', ')}`)
+  }
 
   return new Set([...githubAccounts, ...pendingGithubAccounts])
-}
-
-export function formatUserList(users): Set<string> {
-  return new Set(
-    users
-      .map((user) => user.login?.toLowerCase())
-      .flat()
-      .filter(Boolean),
-  )
 }
 
 export async function getUserIdFromUsername(username: string): Promise<number> {
@@ -49,8 +45,7 @@ export async function getUserIdFromUsername(username: string): Promise<number> {
   let user
   try {
     user = await octokit.users.getByUsername({ username })
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     throw `Unable to find user id for ${username}`
   }
   console.log(`User ${username} userid: ${user.data.id}`)
@@ -74,8 +69,8 @@ export async function addUserToGitHubOrg(
   const userId = await mod.getUserIdFromUsername(user)
   console.log(`Inviting ${user} (${userId} to ${config.githubOrg})`)
   return await octokit.orgs.createInvitation({
-    org: config.githubOrg,
     invitee_id: userId,
+    org: config.githubOrg,
   })
 }
 
