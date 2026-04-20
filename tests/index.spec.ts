@@ -11,9 +11,7 @@ let processExitSpy
 let consoleSpy
 
 beforeEach(() => {
-  processExitSpy = jest.spyOn(global.process, 'exit').mockImplementation(() => {
-    return undefined as never
-  })
+  processExitSpy = jest.spyOn(global.process, 'exit').mockImplementation(() => undefined as never)
   consoleSpy = jest.spyOn(global.console, 'log').mockImplementation(() => {})
 })
 
