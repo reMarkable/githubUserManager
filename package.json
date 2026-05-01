@@ -19,7 +19,7 @@
     "@octokit/rest": "^22.0.1",
     "googleapis": "^171.4.0",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
