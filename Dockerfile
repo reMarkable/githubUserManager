@@ -2,7 +2,7 @@ FROM node:24.14.1-alpine@sha256:01743339035a5c3c11a373cd7c83aeab6ed1457b55da6a69
 
 WORKDIR /app
 RUN corepack enable && echo yo
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --production --frozen-lockfile
 COPY . .
 
