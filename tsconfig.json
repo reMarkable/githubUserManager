@@ -3,7 +3,8 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "declaration": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "exclude": ["node_modules", "tests/**"]
 }
