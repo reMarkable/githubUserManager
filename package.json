@@ -23,11 +23,11 @@
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
-    "@types/node": "^24.12.4",
-    "@vitest/coverage-v8": "^4.1.7",
-    "oxfmt": "^0.52.0",
-    "oxlint": "^1.67.0",
-    "oxlint-tsgolint": "^0.23.0",
-    "vitest": "^4.1.7"
+    "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "oxlint-tsgolint": "^0.25.0",
+    "vitest": "^4.1.10"
   }
 }
