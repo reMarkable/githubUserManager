@@ -74,6 +74,56 @@ export async function addUserToGitHubOrg(
   })
 }
 
+export async function getTeamMembers(): Promise<Set<string>> {
+  const octokit = mod.getAuthenticatedOctokit()
+  const members = await octokit.paginate(octokit.teams.listMembersInOrg, {
+    org: config.githubOrg,
+    team_slug: config.githubTeamSlug,
+  })
+  return formatUserList(members)
+}
+
+export async function addUsersToTeam(users: Set<string>): Promise<void> {
+  for (const user of users) {
+    await mod.addUserToTeam(user)
+  }
+}
+
+export async function addUserToTeam(
+  user: string,
+): Promise<RestEndpointMethodTypes['teams']['addOrUpdateMembershipForUserInOrg']['response'] | boolean> {
+  if (config.ignoredUsers.includes(user.toLowerCase())) {
+    console.log(`Ignoring team add for ${user}`)
+    return false
+  }
+  const octokit = mod.getAuthenticatedOctokit()
+  console.log(`Adding ${user} to team ${config.githubTeamSlug}`)
+  return octokit.teams.addOrUpdateMembershipForUserInOrg({
+    org: config.githubOrg,
+    team_slug: config.githubTeamSlug,
+    username: user,
+  })
+}
+
+export async function syncTeamMembers(): Promise<void> {
+  const octokit = mod.getAuthenticatedOctokit()
+
+  const members = await octokit.paginate(octokit.orgs.listMembers, {
+    org: config.githubOrg,
+  })
+  const orgMembers = formatUserList(members)
+
+  const teamMembers = await mod.getTeamMembers()
+
+  const usersNotInTeam = new Set([...orgMembers].filter((x) => !teamMembers.has(x)))
+  if (usersNotInTeam.size > 0) {
+    console.log(`Users not in team ${config.githubTeamSlug}: ${[...usersNotInTeam].join(', ')}`)
+    await mod.addUsersToTeam(usersNotInTeam)
+  } else {
+    console.log(`All org members already in team ${config.githubTeamSlug}`)
+  }
+}
+
 export async function removeUsersFromGitHubOrg(users: Set<string>): Promise<void> {
   for (const user of users) {
     await mod.removeUserFromGitHubOrg(user)

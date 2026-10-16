@@ -99,6 +99,8 @@ jobs:
           github-installation-id: 12345
           github-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           ignored-users: user1,user2
+          sync-team: 'true'
+          team-slug: 'remarkable'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-actor: ${{ github.actor }}
 ```
@@ -141,3 +143,5 @@ updates:
 | `GITHUB_INSTALLATION_ID` | Github App Installation ID                                                                                                      | `15627551`        | `null`  |
 | `GITHUB_PRIVATE_KEY`     | Base64'd private key as downloaded from github application registration step                                                    | `Zm9vCg==`        | `null`  |
 | `IGNORED_USERS`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
+| `SYNC_TEAM`              | Set to TRUE to ensure every org member is added to the team named in `GITHUB_TEAM_SLUG`                                         | `TRUE`            | `false` |
+| `GITHUB_TEAM_SLUG`       | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |

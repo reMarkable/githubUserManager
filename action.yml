@@ -38,6 +38,12 @@ inputs:
   ignored-users:
     description: 'Comma separated list of user ids to totally ignore always, useful for owners of an org you do not want accidentally removed'
     required: false
+  sync-team:
+    description: 'Set to TRUE to ensure every org member is a member of the team given in `team-slug`'
+    required: false
+  team-slug:
+    description: 'Slug of the team that every org member should be added to (e.g. remarkable)'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -55,6 +61,8 @@ runs:
         -e GITHUB_INSTALLATION_ID="$GITHUB_INSTALLATION_ID" \
         -e GITHUB_PRIVATE_KEY="$GITHUB_PRIVATE_KEY" \
         -e IGNORED_USERS="$IGNORED_USERS" \
+        -e SYNC_TEAM="$SYNC_TEAM" \
+        -e GITHUB_TEAM_SLUG="$GITHUB_TEAM_SLUG" \
         ghcr.io/remarkable/githubusermanager/githubusermanager:v1.4.0
       shell: bash
       env:
@@ -69,3 +77,5 @@ runs:
         GITHUB_INSTALLATION_ID: ${{ inputs.github-installation-id }}
         GITHUB_PRIVATE_KEY: ${{ inputs.github-private-key }}
         IGNORED_USERS: ${{ inputs.ignored-users }}
+        SYNC_TEAM: ${{ inputs.sync-team }}
+        GITHUB_TEAM_SLUG: ${{ inputs.team-slug }}

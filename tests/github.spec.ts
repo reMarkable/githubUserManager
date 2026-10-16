@@ -106,4 +106,73 @@ describe('github integration', () => {
     const response = [{ login: 'chrisns' }, { login: 'chrisns' }, { login: 'foo' }, {}]
     return expect(mod.formatUserList(response)).toEqual(new Set(['chrisns', 'foo']))
   })
+
+  it('addUserToTeam skip ignore', async () => {
+    vi.spyOn(config, 'ignoredUsers', 'get').mockReturnValue(['foo'])
+    await expect(mod.addUserToTeam('foo')).resolves.toBe(false)
+  })
+
+  it('addUserToTeam', async () => {
+    const fakeOctokit = {
+      teams: {
+        addOrUpdateMembershipForUserInOrg: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
+      },
+    }
+    vi.spyOn(config, 'githubOrg', 'get').mockReturnValue('myorg')
+    vi.spyOn(config, 'githubTeamSlug', 'get').mockReturnValue('remarkable')
+    // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
+    vi.spyOn(mod, 'getAuthenticatedOctokit').mockReturnValue(fakeOctokit)
+    await mod.addUserToTeam('foo')
+    return expect(fakeOctokit.teams.addOrUpdateMembershipForUserInOrg).toMatchSnapshot()
+  })
+
+  it('addUsersToTeam', async () => {
+    const users = new Set(['foo', 'bar'])
+    vi.spyOn(mod, 'addUserToTeam').mockResolvedValue(false)
+    await mod.addUsersToTeam(users)
+    return expect(mod.addUserToTeam).toMatchSnapshot()
+  })
+
+  it('getTeamMembers', async () => {
+    const fakeOctokit = {
+      teams: { listMembersInOrg: vi.fn() },
+      paginate: vi
+        .fn<() => Promise<{ login: string }[]>>()
+        .mockResolvedValue([{ login: 'chrisns' }, { login: 'foo' }]),
+    }
+    vi.spyOn(config, 'githubTeamSlug', 'get').mockReturnValue('remarkable')
+    // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
+    vi.spyOn(mod, 'getAuthenticatedOctokit').mockReturnValue(fakeOctokit)
+    await expect(mod.getTeamMembers()).resolves.toEqual(new Set(['chrisns', 'foo']))
+  })
+
+  it('syncTeamMembers adds org members missing from team', async () => {
+    const fakeOctokit = {
+      orgs: { listMembers: vi.fn() },
+      paginate: vi
+        .fn<() => Promise<{ login: string }[]>>()
+        .mockResolvedValue([{ login: 'chrisns' }, { login: 'foo' }, { login: 'bar' }]),
+    }
+    vi.spyOn(config, 'githubTeamSlug', 'get').mockReturnValue('remarkable')
+    // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
+    vi.spyOn(mod, 'getAuthenticatedOctokit').mockReturnValue(fakeOctokit)
+    vi.spyOn(mod, 'getTeamMembers').mockResolvedValue(new Set(['chrisns']))
+    const addSpy = vi.spyOn(mod, 'addUsersToTeam').mockResolvedValue()
+    await mod.syncTeamMembers()
+    expect(addSpy).toHaveBeenCalledWith(new Set(['foo', 'bar']))
+  })
+
+  it('syncTeamMembers no-op when all present', async () => {
+    const fakeOctokit = {
+      orgs: { listMembers: vi.fn() },
+      paginate: vi.fn<() => Promise<{ login: string }[]>>().mockResolvedValue([{ login: 'chrisns' }]),
+    }
+    vi.spyOn(config, 'githubTeamSlug', 'get').mockReturnValue('remarkable')
+    // @ts-expect-error mock service isn't a complete implementation, so being lazy and just doing the bare minimum
+    vi.spyOn(mod, 'getAuthenticatedOctokit').mockReturnValue(fakeOctokit)
+    vi.spyOn(mod, 'getTeamMembers').mockResolvedValue(new Set(['chrisns']))
+    const addSpy = vi.spyOn(mod, 'addUsersToTeam').mockResolvedValue()
+    await mod.syncTeamMembers()
+    expect(addSpy).not.toHaveBeenCalled()
+  })
 })

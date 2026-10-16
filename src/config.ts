@@ -17,6 +17,12 @@ export const config = {
   get githubPrivateKey(): string {
     return Buffer.from(process.env.GITHUB_PRIVATE_KEY, 'base64').toString('utf8')
   },
+  get githubTeamSlug(): string {
+    return process.env.GITHUB_TEAM_SLUG ?? ''
+  },
+  get syncTeam(): boolean {
+    return process.env.SYNC_TEAM?.toLowerCase() === 'true'
+  },
   get googleCredentials(): googleCredentials {
     return JSON.parse(Buffer.from(process.env.GOOGLE_CREDENTIALS, 'base64').toString('utf8'))
   },

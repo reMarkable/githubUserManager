@@ -1,5 +1,5 @@
 import { getGithubUsersFromGoogle } from './src/google.js'
-import { addUsersToGitHubOrg, getGithubUsersFromGithub, removeUsersFromGitHubOrg } from './src/github.js'
+import { addUsersToGitHubOrg, getGithubUsersFromGithub, removeUsersFromGitHubOrg, syncTeamMembers } from './src/github.js'
 import { config } from './src/config.js'
 
 export async function run(): Promise<void> {
@@ -29,6 +29,10 @@ export async function run(): Promise<void> {
     if (config.addUsers) {
       await addUsersToGitHubOrg(usersNotInGithub)
     }
+  }
+
+  if (config.syncTeam) {
+    await syncTeamMembers()
   }
 
   const exitCode = usersNotInGoogle.size > 0 || usersNotInGithub.size > 0 ? config.exitCodeOnMissmatch : 0
