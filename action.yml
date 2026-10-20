@@ -3,7 +3,6 @@ description: 'Manage GitHub organisation membership with Google Workspace user a
 author: Chris Nesbitt-Smith
 branding:
   icon: user-check
-
 inputs:
   google-email-address:
     description: 'Email address to assume to, needs to be an workspace admin'
@@ -63,7 +62,7 @@ runs:
         -e IGNORED_USERS="$IGNORED_USERS" \
         -e SYNC_TEAM="$SYNC_TEAM" \
         -e GITHUB_TEAM_SLUG="$GITHUB_TEAM_SLUG" \
-        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.4.0
+        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.5.0
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
