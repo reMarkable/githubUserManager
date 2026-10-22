@@ -85,7 +85,11 @@ export async function getTeamMembers(): Promise<Set<string>> {
 
 export async function addUsersToTeam(users: Set<string>): Promise<void> {
   for (const user of users) {
-    await mod.addUserToTeam(user)
+    try {
+      await mod.addUserToTeam(user)
+    } catch (error) {
+      console.error(`Skipping team add for ${user}: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 }
 
