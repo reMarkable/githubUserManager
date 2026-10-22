@@ -62,7 +62,7 @@ runs:
         -e IGNORED_USERS="$IGNORED_USERS" \
         -e SYNC_TEAM="$SYNC_TEAM" \
         -e GITHUB_TEAM_SLUG="$GITHUB_TEAM_SLUG" \
-        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.5.0
+        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.5.2
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
