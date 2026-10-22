@@ -1,9 +1,12 @@
-FROM node:24.18.1-alpine@sha256:f70403e87646dc51b45295f4b8b70cdad0b63d2297c4c9899119b03f7af7a6b3
+# syntax=docker/dockerfile:1
+FROM golang:1.27-alpine AS build
 
-WORKDIR /app
-RUN corepack enable && echo yo
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --production --frozen-lockfile
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
+RUN CGO_ENABLED=0 GOFLAGS=-trimpath go build -ldflags="-s -w" -o /githubusermanager .
 
-CMD ["pnpm", "start"]
+FROM gcr.io/distroless/static-debian13:nonroot
+COPY --from=build /githubusermanager /githubusermanager
+ENTRYPOINT ["/githubusermanager"]

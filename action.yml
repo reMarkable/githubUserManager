@@ -19,7 +19,7 @@ inputs:
   remove-suspended_users:
     description: 'Set to TRUE to remove suspended users from the github organisation'
     required: false
-  exit-code-on-missmatch:
+  exit-code-on-mismatch:
     description: 'Exit code to use when there is a mismatch, useful when combined with `ADD_USERS` and `REMOVE_USERS` to be used in a dry-run mode'
     required: false
   github-org:
@@ -43,6 +43,9 @@ inputs:
   team-slug:
     description: 'Slug of the team that every org member should be added to (e.g. remarkable)'
     required: false
+  debug:
+    description: 'Set to TRUE to enable debug level logging'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -62,7 +65,8 @@ runs:
         -e IGNORED_USERS="$IGNORED_USERS" \
         -e SYNC_TEAM="$SYNC_TEAM" \
         -e GITHUB_TEAM_SLUG="$GITHUB_TEAM_SLUG" \
-        ghcr.io/remarkable/githubusermanager/githubusermanager:v1.5.2
+        -e DEBUG="$DEBUG" \
+        ghcr.io/remarkable/githubusermanager:${{ github.action_ref }}
       shell: bash
       env:
         GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
@@ -70,7 +74,7 @@ runs:
         ADD_USERS: ${{ inputs.add-users }}
         REMOVE_USERS: ${{ inputs.remove-users }}
         REMOVE_SUSPENDED_USERS: ${{ inputs.remove-suspended_users }}
-        EXIT_CODE_ON_MISMATCH: ${{ inputs.exit-code-on-missmatch }}
+        EXIT_CODE_ON_MISMATCH: ${{ inputs.exit-code-on-mismatch }}
         GITHUB_ORG: ${{ inputs.github-org }}
         GITHUB_APP_ID: ${{ inputs.github-app-id }}
         GITHUB_INSTALLATION_ID: ${{ inputs.github-installation-id }}
@@ -78,3 +82,4 @@ runs:
         IGNORED_USERS: ${{ inputs.ignored-users }}
         SYNC_TEAM: ${{ inputs.sync-team }}
         GITHUB_TEAM_SLUG: ${{ inputs.team-slug }}
+        DEBUG: ${{ inputs.debug }}

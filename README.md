@@ -1,11 +1,10 @@
 # Manage github organisation membership with Google Workspace user accounts
 
-[![Known Vulnerabilities](https://snyk.io/test/github/appvia/githubUserManager/badge.svg)](https://snyk.io/test/github/appvia/githubUserManager)
-[![GitHub license](https://img.shields.io/github/license/appvia/githubUserManager)](https://github.com/appvia/githubUserManager/blob/main/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/appvia/githubusermanager)](https://github.com/appvia/githubusermanager/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/appvia/githubusermanager)](https://github.com/appvia/githubusermanager/network)
-[![GitHub issues](https://img.shields.io/github/issues/appvia/githubusermanager)](https://github.com/appvia/githubusermanager/issues)
-[![ci](https://github.com/appvia/githubUserManager/actions/workflows/ci.yml/badge.svg)](https://github.com/appvia/githubUserManager/actions/workflows/ci.yml)
+[![GitHub license](https://img.shields.io/github/license/reMarkable/githubUserManager)](https://github.com/reMarkable/githubUserManager/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/reMarkable/githubusermanager)](https://github.com/reMarkable/githubusermanager/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/reMarkable/githubusermanager)](https://github.com/reMarkable/githubusermanager/network)
+[![GitHub issues](https://img.shields.io/github/issues/reMarkable/githubusermanager)](https://github.com/reMarkable/githubusermanager/issues)
+[![ci](https://github.com/reMarkable/githubUserManager/actions/workflows/ci.yml/badge.svg)](https://github.com/reMarkable/githubUserManager/actions/workflows/ci.yml)
 
 Manages who is in your GitHub organization based on a custom property in their Google Workspace profile, allowing for seamless JML (Joiner mover leaver) process, if allowed removing/disabling an account in the Google Workspace will remove the user from the GitHub; similarly adding a user also works the same way. If you don't want to run it in destructive mode it can be configured to exit with a non-zero exit code so that you know to go and manually make the changes.
 
@@ -87,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Github Org Membership Manager
-        uses: appvia/githubUserManager@v1.0.5
+        uses: reMarkable/githubUserManager@v1
         with:
           google-email-address: hello@example.com
           google-credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
@@ -120,13 +119,20 @@ updates:
 #### Docker
 
 1. Make an [env file](https://www.digitalocean.com/community/tutorials/how-to-read-and-set-environmental-and-shell-variables-on-linux) with the [below table](#Setup-environment-variables)
-1. `docker run --env-file .env docker.pkg.github.com/appvia/githubusermanager/githubusermanager:main`
+1. `docker run --env-file .env ghcr.io/remarkable/githubusermanager:main`
 
-#### node/lambda/cloud run/ something else
+Images are published to `ghcr.io/remarkable/githubusermanager` and tagged to
+match the refs you can reference the action with: `main`, released versions
+(`v1.2.3`), the moving `v1.2`/`v1` tags, and `sha-<shortsha>` for a specific
+build. The GitHub Action always pulls the image tag matching the ref it was
+called with (`${{ github.action_ref }}`), so there is no image version to bump
+by hand before a release.
+
+#### Go / lambda / cloud run / something else
 
 1.  Clone this repo
-1.  `pnpm install --production`
-1.  `pnpm start` (with the with the [below environment variables table](#Setup-environment-variables) set)
+1.  `go build -o githubusermanager .`
+1.  `./githubusermanager` (with the [below environment variables table](#Setup-environment-variables) set)
 
 ### Setup environment variables
 
@@ -145,3 +151,4 @@ updates:
 | `IGNORED_USERS`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
 | `SYNC_TEAM`              | Set to TRUE to ensure every org member is added to the team named in `GITHUB_TEAM_SLUG`                                         | `TRUE`            | `false` |
 | `GITHUB_TEAM_SLUG`       | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |
+| `DEBUG`                  | Set to TRUE to enable debug level logging                                                                                       | `TRUE`            | `false` |
