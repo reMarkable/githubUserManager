@@ -133,6 +133,15 @@ describe('github integration', () => {
     return expect(mod.addUserToTeam).toMatchSnapshot()
   })
 
+  it('addUsersToTeam skips users that error', async () => {
+    const users = new Set(['foo', 'bar'])
+    vi.spyOn(mod, 'addUserToTeam')
+      .mockRejectedValueOnce(new Error('Validation Failed: no_saml_sso'))
+      .mockResolvedValueOnce(false)
+    await expect(mod.addUsersToTeam(users)).resolves.toBeUndefined()
+    expect(mod.addUserToTeam).toHaveBeenCalledTimes(2)
+  })
+
   it('getTeamMembers', async () => {
     const fakeOctokit = {
       teams: { listMembersInOrg: vi.fn() },
