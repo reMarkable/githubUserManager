@@ -1,0 +1,48 @@
+name: release
+
+# When a release is published for a semver tag (vX.Y.Z), move the matching
+# major (vX) and major.minor (vX.Y) git tags to the released commit. This keeps
+# `uses: reMarkable/githubUserManager@v1` (and @v1.2) pointing at the latest
+# compatible release, matching the moving image tags published by ci.yml.
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  move-major-minor-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Move major and major.minor tags
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_SHA: ${{ github.event.release.target_commitish }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$RELEASE_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Release tag '$RELEASE_TAG' is not a vX.Y.Z semver tag; skipping."
+            exit 0
+          fi
+
+          major="v${BASH_REMATCH[1]}"
+          minor="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+
+          # Resolve the commit the release points at (the annotated release tag).
+          target="$(git rev-list -n 1 "$RELEASE_TAG")"
+          echo "Release $RELEASE_TAG -> $target; moving $major and $minor"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for tag in "$major" "$minor"; do
+            git tag -f "$tag" "$target"
+            git push --force origin "refs/tags/$tag"
+          done

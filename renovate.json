@@ -3,31 +3,20 @@
   "extends": [
     "config:recommended",
     "group:allNonMajor",
-    "security:minimumReleaseAgeNpm",
     "customManagers:dockerfileVersions"
   ],
   "configMigration": true,
-  "npm": {
-    "rangeStrategy": "bump"
-  },
   "packageRules": [
     {
-      "description": "Update Docker base images and deps",
+      "description": "Update Docker base images",
       "matchDatasources": ["docker"],
       "groupName": "dockerfile dependencies"
     },
     {
-      "matchDatasources": ["npm"],
-      "matchDepTypes": ["devDependencies"],
+      "description": "Group non-major Go module updates",
+      "matchManagers": ["gomod"],
       "matchUpdateTypes": ["patch", "minor"],
-      "groupName": "all non-major npm devDependencies"
-    },
-    {
-      "matchDatasources": ["npm"],
-      "minimumReleaseAge": "7 days",
-      "matchDepTypes": ["dependencies"],
-      "matchUpdateTypes": ["patch", "minor"],
-      "groupName": "all non-major npm dependencies"
+      "groupName": "all non-major go dependencies"
     }
   ],
   "pre-commit": {

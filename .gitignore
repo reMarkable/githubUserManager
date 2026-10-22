@@ -1,5 +1,6 @@
 credentials.json
-node_modules
 .env
 coverage
+coverage.out
 *.pem
+/githubusermanager
