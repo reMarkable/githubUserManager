@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v88/github"
 
 	"github.com/reMarkable/githubUserManager/internal/config"
@@ -36,7 +35,7 @@ type Service struct {
 
 // New builds a Service authenticated as the configured GitHub App installation.
 func New(cfg *config.Config) (*Service, error) {
-	transport, err := ghinstallation.New(
+	transport, err := newAppTransport(
 		http.DefaultTransport,
 		cfg.GitHubAppID,
 		cfg.GitHubInstallationID,
