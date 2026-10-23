@@ -22,6 +22,10 @@ inputs:
   exit-code-on-mismatch:
     description: 'Exit code to use when there is a mismatch, useful when combined with `ADD_USERS` and `REMOVE_USERS` to be used in a dry-run mode'
     required: false
+  max-remove-users:
+    description: 'Safety limit on how many users may be removed in a single run'
+    required: false
+    default: '100'
   github-org:
     description: 'GitHub Organization  '
     required: true
@@ -47,39 +51,5 @@ inputs:
     description: 'Set to TRUE to enable debug level logging'
     required: false
 runs:
-  using: 'composite'
-  steps:
-    - name: Run
-      run: |
-        docker run --rm \
-        -e GOOGLE_EMAIL_ADDRESS="$GOOGLE_EMAIL_ADDRESS" \
-        -e GOOGLE_CREDENTIALS="$GOOGLE_CREDENTIALS" \
-        -e ADD_USERS="$ADD_USERS" \
-        -e REMOVE_USERS="$REMOVE_USERS" \
-        -e REMOVE_SUSPENDED_USERS="$REMOVE_SUSPENDED_USERS" \
-        -e EXIT_CODE_ON_MISMATCH="$EXIT_CODE_ON_MISMATCH" \
-        -e GITHUB_ORG="$GITHUB_ORG" \
-        -e GITHUB_APP_ID="$GITHUB_APP_ID" \
-        -e GITHUB_INSTALLATION_ID="$GITHUB_INSTALLATION_ID" \
-        -e GITHUB_PRIVATE_KEY="$GITHUB_PRIVATE_KEY" \
-        -e IGNORED_USERS="$IGNORED_USERS" \
-        -e SYNC_TEAM="$SYNC_TEAM" \
-        -e GITHUB_TEAM_SLUG="$GITHUB_TEAM_SLUG" \
-        -e DEBUG="$DEBUG" \
-        ghcr.io/remarkable/githubusermanager:${{ github.action_ref }}
-      shell: bash
-      env:
-        GOOGLE_EMAIL_ADDRESS: ${{ inputs.google-email-address }}
-        GOOGLE_CREDENTIALS: ${{ inputs.google-credentials }}
-        ADD_USERS: ${{ inputs.add-users }}
-        REMOVE_USERS: ${{ inputs.remove-users }}
-        REMOVE_SUSPENDED_USERS: ${{ inputs.remove-suspended_users }}
-        EXIT_CODE_ON_MISMATCH: ${{ inputs.exit-code-on-mismatch }}
-        GITHUB_ORG: ${{ inputs.github-org }}
-        GITHUB_APP_ID: ${{ inputs.github-app-id }}
-        GITHUB_INSTALLATION_ID: ${{ inputs.github-installation-id }}
-        GITHUB_PRIVATE_KEY: ${{ inputs.github-private-key }}
-        IGNORED_USERS: ${{ inputs.ignored-users }}
-        SYNC_TEAM: ${{ inputs.sync-team }}
-        GITHUB_TEAM_SLUG: ${{ inputs.team-slug }}
-        DEBUG: ${{ inputs.debug }}
+  using: 'docker'
+  image: 'Dockerfile'

@@ -3,7 +3,9 @@ name: release
 # When a release is published for a semver tag (vX.Y.Z), move the matching
 # major (vX) and major.minor (vX.Y) git tags to the released commit. This keeps
 # `uses: reMarkable/githubUserManager@v1` (and @v1.2) pointing at the latest
-# compatible release, matching the moving image tags published by ci.yml.
+# compatible release. The action is a Docker container action built from the
+# Dockerfile at the referenced commit, so these git tags are the only thing
+# consumers pin against.
 on:
   release:
     types:
