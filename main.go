@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"os"
 
+	gh "github.com/sethvargo/go-githubactions"
+
 	"github.com/reMarkable/githubUserManager/internal/app"
 	"github.com/reMarkable/githubUserManager/internal/config"
 	"github.com/reMarkable/githubUserManager/internal/githuborg"
@@ -17,7 +19,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg, err := config.Load()
+	action := gh.New()
+
+	cfg, err := config.Load(action)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(1)

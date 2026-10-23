@@ -2,46 +2,38 @@ package config
 
 import (
 	"encoding/base64"
-	"os"
 	"reflect"
 	"testing"
 )
 
-func clearEnv(t *testing.T) {
-	t.Helper()
-	for _, k := range []string{
-		"ADD_USERS", "REMOVE_USERS", "REMOVE_SUSPENDED_USERS", "EXIT_CODE_ON_MISMATCH",
-		"MAX_REMOVE_USERS", "GITHUB_ORG", "GITHUB_APP_ID", "GITHUB_INSTALLATION_ID",
-		"GITHUB_PRIVATE_KEY", "GITHUB_TEAM_SLUG", "SYNC_TEAM", "IGNORED_USERS",
-		"GOOGLE_EMAIL_ADDRESS", "GOOGLE_CREDENTIALS",
-	} {
-		_ = os.Unsetenv(k)
+// fakeInputs implements InputSource backed by a map of input name to value.
+type fakeInputs map[string]string
+
+func (f fakeInputs) GetInput(name string) string { return f[name] }
+
+// validInputs returns the minimum required inputs for Load to succeed.
+func validInputs() fakeInputs {
+	return fakeInputs{
+		"github-app-id":          "123",
+		"github-installation-id": "456",
+		"github-private-key":     base64.StdEncoding.EncodeToString([]byte("helloworld")),
+		"google-credentials":     base64.StdEncoding.EncodeToString([]byte(`{"client_email":"foo","private_key":"bar"}`)),
 	}
 }
 
-// validEnv sets the minimum required variables for Load to succeed.
-func validEnv(t *testing.T) {
-	t.Helper()
-	_ = os.Setenv("GITHUB_APP_ID", "123")
-	_ = os.Setenv("GITHUB_INSTALLATION_ID", "456")
-	_ = os.Setenv("GITHUB_PRIVATE_KEY", base64.StdEncoding.EncodeToString([]byte("helloworld")))
-	_ = os.Setenv("GOOGLE_CREDENTIALS", base64.StdEncoding.EncodeToString([]byte(`{"client_email":"foo","private_key":"bar"}`)))
-}
-
-func TestBoolEnv(t *testing.T) {
+func TestBoolVal(t *testing.T) {
 	cases := map[string]bool{"": false, "foobar": false, "false": false, "true": true, "tRuE": true}
 	for in, want := range cases {
-		clearEnv(t)
-		validEnv(t)
+		inputs := validInputs()
 		if in != "" {
-			_ = os.Setenv("ADD_USERS", in)
+			inputs["add-users"] = in
 		}
-		cfg, err := Load()
+		cfg, err := Load(inputs)
 		if err != nil {
 			t.Fatalf("Load: %v", err)
 		}
 		if cfg.AddUsers != want {
-			t.Errorf("ADD_USERS=%q => %v, want %v", in, cfg.AddUsers, want)
+			t.Errorf("add-users=%q => %v, want %v", in, cfg.AddUsers, want)
 		}
 	}
 }
@@ -49,27 +41,25 @@ func TestBoolEnv(t *testing.T) {
 func TestExitCodeOnMismatch(t *testing.T) {
 	cases := map[string]int{"": 0, "hello": 0, "123": 123}
 	for in, want := range cases {
-		clearEnv(t)
-		validEnv(t)
+		inputs := validInputs()
 		if in != "" {
-			_ = os.Setenv("EXIT_CODE_ON_MISMATCH", in)
+			inputs["exit-code-on-mismatch"] = in
 		}
-		cfg, _ := Load()
+		cfg, _ := Load(inputs)
 		if cfg.ExitCodeOnMismatch != want {
-			t.Errorf("EXIT_CODE_ON_MISMATCH=%q => %d, want %d", in, cfg.ExitCodeOnMismatch, want)
+			t.Errorf("exit-code-on-mismatch=%q => %d, want %d", in, cfg.ExitCodeOnMismatch, want)
 		}
 	}
 }
 
 func TestMaxRemoveUsersDefault(t *testing.T) {
-	clearEnv(t)
-	validEnv(t)
-	cfg, _ := Load()
+	inputs := validInputs()
+	cfg, _ := Load(inputs)
 	if cfg.MaxRemoveUsers != 100 {
 		t.Errorf("default MaxRemoveUsers = %d, want 100", cfg.MaxRemoveUsers)
 	}
-	_ = os.Setenv("MAX_REMOVE_USERS", "5")
-	cfg, _ = Load()
+	inputs["max-remove-users"] = "5"
+	cfg, _ = Load(inputs)
 	if cfg.MaxRemoveUsers != 5 {
 		t.Errorf("MaxRemoveUsers = %d, want 5", cfg.MaxRemoveUsers)
 	}
@@ -83,22 +73,19 @@ func TestIgnoredUsers(t *testing.T) {
 		"user1, user2 ,USER3": {"user1", "user2", "user3"},
 	}
 	for in, want := range cases {
-		clearEnv(t)
-		validEnv(t)
+		inputs := validInputs()
 		if in != "" {
-			_ = os.Setenv("IGNORED_USERS", in)
+			inputs["ignored-users"] = in
 		}
-		cfg, _ := Load()
+		cfg, _ := Load(inputs)
 		if !reflect.DeepEqual(cfg.IgnoredUsers, want) {
-			t.Errorf("IGNORED_USERS=%q => %v, want %v", in, cfg.IgnoredUsers, want)
+			t.Errorf("ignored-users=%q => %v, want %v", in, cfg.IgnoredUsers, want)
 		}
 	}
 }
 
 func TestPrivateKeyBase64Decode(t *testing.T) {
-	clearEnv(t)
-	validEnv(t)
-	cfg, err := Load()
+	cfg, err := Load(validInputs())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,10 +95,9 @@ func TestPrivateKeyBase64Decode(t *testing.T) {
 }
 
 func TestGoogleCredentialsDecode(t *testing.T) {
-	clearEnv(t)
-	validEnv(t)
-	_ = os.Setenv("GOOGLE_CREDENTIALS", base64.StdEncoding.EncodeToString([]byte(`{"client_email":"hello","private_key":"world"}`)))
-	cfg, err := Load()
+	inputs := validInputs()
+	inputs["google-credentials"] = base64.StdEncoding.EncodeToString([]byte(`{"client_email":"hello","private_key":"world"}`))
+	cfg, err := Load(inputs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,19 +107,17 @@ func TestGoogleCredentialsDecode(t *testing.T) {
 }
 
 func TestLoadRejectsBadAppID(t *testing.T) {
-	clearEnv(t)
-	validEnv(t)
-	_ = os.Setenv("GITHUB_APP_ID", "notanumber")
-	if _, err := Load(); err == nil {
-		t.Error("expected error for non-numeric GITHUB_APP_ID")
+	inputs := validInputs()
+	inputs["github-app-id"] = "notanumber"
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error for non-numeric github-app-id")
 	}
 }
 
 func TestLoadRejectsBadBase64(t *testing.T) {
-	clearEnv(t)
-	validEnv(t)
-	_ = os.Setenv("GITHUB_PRIVATE_KEY", "!!!notbase64!!!")
-	if _, err := Load(); err == nil {
-		t.Error("expected error for invalid base64 GITHUB_PRIVATE_KEY")
+	inputs := validInputs()
+	inputs["github-private-key"] = "!!!notbase64!!!"
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error for invalid base64 github-private-key")
 	}
 }

@@ -92,7 +92,7 @@ jobs:
           google-credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
           add-users: 'false'
           remove-users: 'false'
-          exit-code-on-missmatch: '1'
+          exit-code-on-mismatch: '1'
           github-org: 'myorg'
           github-app-id: 1234
           github-installation-id: 12345
@@ -100,8 +100,6 @@ jobs:
           ignored-users: user1,user2
           sync-team: 'true'
           team-slug: 'remarkable'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-actor: ${{ github.actor }}
 ```
 
 Add a dependabot configuration to always get updates!
@@ -118,37 +116,50 @@ updates:
 
 #### Docker
 
-1. Make an [env file](https://www.digitalocean.com/community/tutorials/how-to-read-and-set-environmental-and-shell-variables-on-linux) with the [below table](#Setup-environment-variables)
-1. `docker run --env-file .env ghcr.io/remarkable/githubusermanager:main`
+This action runs as a [Docker container action](https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-docker-container-action):
+GitHub builds the image from the `Dockerfile` at the exact ref you pin the
+action to, so you can reference an immutable commit SHA and there is no
+separately published image tag to bump before a release.
 
-Images are published to `ghcr.io/remarkable/githubusermanager` and tagged to
-match the refs you can reference the action with: `main`, released versions
-(`v1.2.3`), the moving `v1.2`/`v1` tags, and `sha-<shortsha>` for a specific
-build. The GitHub Action always pulls the image tag matching the ref it was
-called with (`${{ github.action_ref }}`), so there is no image version to bump
-by hand before a release.
+Inputs are read directly from the GitHub Action inputs (exposed by the runner
+as `INPUT_*` environment variables). To run the container by hand, set the same
+inputs with the `INPUT_` prefix and the input name upper-cased, e.g.
+`INPUT_GITHUB-ORG`, `INPUT_ADD-USERS`:
+
+```sh
+docker build -t githubusermanager .
+docker run --rm \
+  -e INPUT_GOOGLE-EMAIL-ADDRESS=foo@example.com \
+  -e INPUT_GITHUB-ORG=myorg \
+  # ...the remaining inputs from the table below... \
+  githubusermanager
+```
 
 #### Go / lambda / cloud run / something else
 
 1.  Clone this repo
 1.  `go build -o githubusermanager .`
-1.  `./githubusermanager` (with the [below environment variables table](#Setup-environment-variables) set)
+1.  `./githubusermanager` (with the `INPUT_*` variables from the [table below](#action-inputs) set)
 
-### Setup environment variables
+### Action inputs
 
-| Environment Variable     | Description                                                                                                                     | Example           | Default |
+Inputs use the action input names below; when running the container directly set
+them as `INPUT_<NAME>` environment variables (upper-cased input name).
+
+| Input                    | Description                                                                                                                     | Example           | Default |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------- |
-| `GOOGLE_EMAIL_ADDRESS`   | Email address to assume to, needs to be an workspace admin                                                                      | `foo@example.com` | `null`  |
-| `GOOGLE_CREDENTIALS`     | Base64'd json as downloaded from the google service account creation step                                                       | `Zm9vCg==`        | `null`  |
-| `ADD_USERS`              | Set to TRUE to add users to the github organisation                                                                             | `TRUE`            | `false` |
-| `REMOVE_USERS`           | Set to TRUE to remove users from the github organisation                                                                        | `TRUE`            | `false` |
-| `REMOVE_SUSPENDED_USERS` | Set to TRUE to remove users from the github organisation that are suspended in Google                                           | `TRUE`            | `false` |
-| `EXIT_CODE_ON_MISMATCH`  | Exit code to use when there's a mismatch, useful when combined with `ADD_USERS` and `REMOVE_USERS` to be used in a dry-run mode | `1`               | `0`     |
-| `GITHUB_ORG`             | GitHub Organization                                                                                                             | `chrisnstest`     | `null`  |
-| `GITHUB_APP_ID`          | GitHub App ID                                                                                                                   | `106341`          | `null`  |
-| `GITHUB_INSTALLATION_ID` | Github App Installation ID                                                                                                      | `15627551`        | `null`  |
-| `GITHUB_PRIVATE_KEY`     | Base64'd private key as downloaded from github application registration step                                                    | `Zm9vCg==`        | `null`  |
-| `IGNORED_USERS`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
-| `SYNC_TEAM`              | Set to TRUE to ensure every org member is added to the team named in `GITHUB_TEAM_SLUG`                                         | `TRUE`            | `false` |
-| `GITHUB_TEAM_SLUG`       | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |
-| `DEBUG`                  | Set to TRUE to enable debug level logging                                                                                       | `TRUE`            | `false` |
+| `google-email-address`   | Email address to assume to, needs to be an workspace admin                                                                      | `foo@example.com` | `null`  |
+| `google-credentials`     | Base64'd json as downloaded from the google service account creation step                                                       | `Zm9vCg==`        | `null`  |
+| `add-users`              | Set to TRUE to add users to the github organisation                                                                             | `TRUE`            | `false` |
+| `remove-users`           | Set to TRUE to remove users from the github organisation                                                                        | `TRUE`            | `false` |
+| `remove-suspended_users` | Set to TRUE to remove users from the github organisation that are suspended in Google                                           | `TRUE`            | `false` |
+| `exit-code-on-mismatch`  | Exit code to use when there's a mismatch, useful when combined with `add-users` and `remove-users` to be used in a dry-run mode | `1`               | `0`     |
+| `max-remove-users`       | Safety limit on how many users may be removed in a single run                                                                   | `100`             | `100`   |
+| `github-org`             | GitHub Organization                                                                                                             | `chrisnstest`     | `null`  |
+| `github-app-id`          | GitHub App ID                                                                                                                   | `106341`          | `null`  |
+| `github-installation-id` | Github App Installation ID                                                                                                      | `15627551`        | `null`  |
+| `github-private-key`     | Base64'd private key as downloaded from github application registration step                                                    | `Zm9vCg==`        | `null`  |
+| `ignored-users`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
+| `sync-team`              | Set to TRUE to ensure every org member is added to the team named in `team-slug`                                               | `TRUE`            | `false` |
+| `team-slug`              | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |
+| `debug`                  | Set to TRUE to enable debug level logging                                                                                       | `TRUE`            | `false` |

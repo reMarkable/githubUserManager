@@ -1,16 +1,20 @@
-// Package config loads the manager configuration from environment variables.
-// The variable names and semantics match the original Node implementation so
-// the container contract is unchanged.
+// Package config loads the manager configuration from GitHub Action inputs
+// (exposed as INPUT_* environment variables) via go-githubactions.
 package config
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 )
+
+// InputSource resolves a GitHub Action input by its kebab-case name. It is
+// satisfied by *github.com/sethvargo/go-githubactions.Action.
+type InputSource interface {
+	GetInput(name string) string
+}
 
 // GoogleCredentials mirrors the service-account JSON downloaded from GCP.
 type GoogleCredentials struct {
@@ -50,60 +54,60 @@ type Config struct {
 	GoogleCredentialsJSON []byte
 }
 
-// Load reads and validates the configuration from the environment.
-func Load() (*Config, error) {
+// Load reads and validates the configuration from the action inputs.
+func Load(src InputSource) (*Config, error) {
 	c := &Config{
-		AddUsers:             boolEnv("ADD_USERS"),
-		RemoveUsers:          boolEnv("REMOVE_USERS"),
-		RemoveSuspendedUsers: boolEnv("REMOVE_SUSPENDED_USERS"),
-		ExitCodeOnMismatch:   intEnvOr("EXIT_CODE_ON_MISMATCH", 0),
-		MaxRemoveUsers:       intEnvOr("MAX_REMOVE_USERS", 100),
-		Debug:                boolEnv("DEBUG"),
-		GitHubOrg:            os.Getenv("GITHUB_ORG"),
-		GitHubTeamSlug:       os.Getenv("GITHUB_TEAM_SLUG"),
-		SyncTeam:             boolEnv("SYNC_TEAM"),
-		IgnoredUsers:         ignoredUsers(os.Getenv("IGNORED_USERS")),
-		GoogleEmailAddress:   os.Getenv("GOOGLE_EMAIL_ADDRESS"),
+		AddUsers:             boolVal(src.GetInput("add-users")),
+		RemoveUsers:          boolVal(src.GetInput("remove-users")),
+		RemoveSuspendedUsers: boolVal(src.GetInput("remove-suspended_users")),
+		ExitCodeOnMismatch:   intOr(src.GetInput("exit-code-on-mismatch"), 0),
+		MaxRemoveUsers:       intOr(src.GetInput("max-remove-users"), 100),
+		Debug:                boolVal(src.GetInput("debug")),
+		GitHubOrg:            src.GetInput("github-org"),
+		GitHubTeamSlug:       src.GetInput("team-slug"),
+		SyncTeam:             boolVal(src.GetInput("sync-team")),
+		IgnoredUsers:         ignoredUsers(src.GetInput("ignored-users")),
+		GoogleEmailAddress:   src.GetInput("google-email-address"),
 	}
 
-	appID, err := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+	appID, err := strconv.ParseInt(src.GetInput("github-app-id"), 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("GITHUB_APP_ID must be a number: %w", err)
+		return nil, fmt.Errorf("github-app-id must be a number: %w", err)
 	}
 	c.GitHubAppID = appID
 
-	installationID, err := strconv.ParseInt(os.Getenv("GITHUB_INSTALLATION_ID"), 10, 64)
+	installationID, err := strconv.ParseInt(src.GetInput("github-installation-id"), 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("GITHUB_INSTALLATION_ID must be a number: %w", err)
+		return nil, fmt.Errorf("github-installation-id must be a number: %w", err)
 	}
 	c.GitHubInstallationID = installationID
 
-	key, err := decodeBase64("GITHUB_PRIVATE_KEY")
+	key, err := decodeBase64("github-private-key", src.GetInput("github-private-key"))
 	if err != nil {
 		return nil, err
 	}
 	c.GitHubPrivateKey = string(key)
 
-	creds, err := decodeBase64("GOOGLE_CREDENTIALS")
+	creds, err := decodeBase64("google-credentials", src.GetInput("google-credentials"))
 	if err != nil {
 		return nil, err
 	}
 	c.GoogleCredentialsJSON = creds
 	if err := json.Unmarshal(creds, &c.GoogleCredentials); err != nil {
-		return nil, fmt.Errorf("GOOGLE_CREDENTIALS is not valid JSON: %w", err)
+		return nil, fmt.Errorf("google-credentials is not valid JSON: %w", err)
 	}
 
 	return c, nil
 }
 
-func boolEnv(name string) bool {
-	return strings.EqualFold(os.Getenv(name), "true")
+func boolVal(s string) bool {
+	return strings.EqualFold(strings.TrimSpace(s), "true")
 }
 
-// intEnvOr matches the Node `parseInt(...) || fallback` behaviour: an unset,
+// intOr matches the Node `parseInt(...) || fallback` behaviour: an unset,
 // invalid, or zero value falls back to the default.
-func intEnvOr(name string, fallback int) int {
-	v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(name)))
+func intOr(s string, fallback int) int {
+	v, err := strconv.Atoi(strings.TrimSpace(s))
 	if err != nil || v == 0 {
 		return fallback
 	}
@@ -111,6 +115,7 @@ func intEnvOr(name string, fallback int) int {
 }
 
 func ignoredUsers(raw string) []string {
+	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil
 	}
@@ -121,9 +126,8 @@ func ignoredUsers(raw string) []string {
 	return parts
 }
 
-func decodeBase64(name string) ([]byte, error) {
-	raw := strings.TrimSpace(os.Getenv(name))
-	decoded, err := base64.StdEncoding.DecodeString(raw)
+func decodeBase64(name, raw string) ([]byte, error) {
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(raw))
 	if err != nil {
 		return nil, fmt.Errorf("%s must be base64 encoded: %w", name, err)
 	}
