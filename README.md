@@ -68,7 +68,7 @@ Right now this only handles the organization membership, it **does not** touch t
     1. Click `Install App`
     1. Click `Install`
     1. Click `Install`
-    - take node of the url, it'll look something like: `github.com/organizations/myorg/settings/installations/15627551`, the installationId is the last number `15627551`
+    - take note of the url, it'll look something like: `github.com/organizations/myorg/settings/installations/15627551`, the installationId is the last number `15627551`
 
 ### Run
 
@@ -86,7 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Github Org Membership Manager
-        uses: reMarkable/githubUserManager@v1
+        uses:
+        docker://ghcr.io/remarkable/githubusermanager/githubusermanager:v2.0.0
         with:
           google-email-address: hello@example.com
           google-credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
@@ -116,23 +117,43 @@ updates:
 
 #### Docker
 
-This action runs as a [Docker container action](https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-docker-container-action):
-GitHub builds the image from the `Dockerfile` at the exact ref you pin the
-action to, so you can reference an immutable commit SHA and there is no
-separately published image tag to bump before a release.
+This action runs as a [Docker container action](https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-docker-container-action).
+CI publishes a prebuilt image to the GitHub Container Registry at
+`ghcr.io/remarkable/githubusermanager/githubusermanager`, tagged per build
+(`main`, `pr-<number>`, the release tag, and `sha-<shortsha>`). Reference it
+directly and pin to an immutable `sha-` tag, e.g.:
+
+```yaml
+- name: Github Org Membership Manager
+  uses: docker://ghcr.io/remarkable/githubusermanager/githubusermanager:sha-d84fa48
+  with:
+    # ...inputs from the table below...
+```
+
+Alternatively, `uses: reMarkable/githubUserManager@<ref>` makes GitHub build the
+image from the `Dockerfile` at the ref you pin to.
 
 Inputs are read directly from the GitHub Action inputs (exposed by the runner
-as `INPUT_*` environment variables). To run the container by hand, set the same
-inputs with the `INPUT_` prefix and the input name upper-cased, e.g.
-`INPUT_GITHUB-ORG`, `INPUT_ADD-USERS`:
+as `INPUT_*` environment variables). To run the published image by hand, set the
+same inputs with the `INPUT_` prefix and the input name upper-cased, e.g.
+`INPUT_GITHUB-ORG`, `INPUT_ADD-USERS`.
+
+The easiest way is to copy `.env.example` to `.env`, fill in the
+[inputs below](#action-inputs), and pass it with `--env-file`:
 
 ```sh
-docker build -t githubusermanager .
+docker run --rm --env-file .env \
+  ghcr.io/remarkable/githubusermanager/githubusermanager:main
+```
+
+Or set the inputs individually with `-e`:
+
+```sh
 docker run --rm \
   -e INPUT_GOOGLE-EMAIL-ADDRESS=foo@example.com \
   -e INPUT_GITHUB-ORG=myorg \
-  # ...the remaining inputs from the table below... \
-  githubusermanager
+  -e INPUT_ADD-USERS=false \
+  ghcr.io/remarkable/githubusermanager/githubusermanager:main
 ```
 
 #### Go / lambda / cloud run / something else
@@ -160,6 +181,6 @@ them as `INPUT_<NAME>` environment variables (upper-cased input name).
 | `github-installation-id` | Github App Installation ID                                                                                                      | `15627551`        | `null`  |
 | `github-private-key`     | Base64'd private key as downloaded from github application registration step                                                    | `Zm9vCg==`        | `null`  |
 | `ignored-users`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
-| `sync-team`              | Set to TRUE to ensure every org member is added to the team named in `team-slug`                                               | `TRUE`            | `false` |
+| `sync-team`              | Set to TRUE to ensure every org member is added to the team named in `team-slug`                                                | `TRUE`            | `false` |
 | `team-slug`              | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |
 | `debug`                  | Set to TRUE to enable debug level logging                                                                                       | `TRUE`            | `false` |
