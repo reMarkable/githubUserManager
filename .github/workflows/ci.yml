@@ -32,14 +32,12 @@ jobs:
           # Tag by event so each image is traceable to what produced it:
           #   - pull request  -> `pr-<number>` (so a PR build can be tested)
           #   - push to main  -> `main`
-          #   - release vX.Y.Z -> `vX.Y.Z`, `vX.Y`, `vX` (moving tags)
+          #   - release        -> the exact release tag (e.g. `v2.0.0.0-rc1`)
           #   - any build      -> `sha-<shortsha>` (for debugging/pinning)
           tags: |
             type=ref,event=pr
             type=ref,event=branch
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{major}}
+            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
             type=sha
           labels: |
             org.opencontainers.image.vendor=reMarkable
