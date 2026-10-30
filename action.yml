@@ -19,6 +19,9 @@ inputs:
   remove-suspended_users:
     description: 'Set to TRUE to remove suspended users from the github organisation'
     required: false
+  dry-run:
+    description: 'Set to TRUE to log all intended changes (org and team membership) without applying them. Combine with exit-code-on-mismatch for a reporting-only run.'
+    required: false
   exit-code-on-mismatch:
     description: 'Exit code to use when there is a mismatch, useful when combined with `ADD_USERS` and `REMOVE_USERS` to be used in a dry-run mode'
     required: false
@@ -46,6 +49,12 @@ inputs:
     required: false
   team-slug:
     description: 'Slug of the team that every org member should be added to (e.g. remarkable)'
+    required: false
+  team-map:
+    description: 'Inline JSON object mapping a Google Workspace group email to a GitHub team slug, e.g. {"engineering@remarkable.no":"engineering"}. Members of each group are synced into the mapped team. Prefer team-map-file for maintainability. team-map-file takes precedence when both are set.'
+    required: false
+  team-map-file:
+    description: 'Path to a JSON file mapping Google Workspace group emails to GitHub team slugs. Members of each group are synced into the mapped team.'
     required: false
   debug:
     description: 'Set to TRUE to enable debug level logging'

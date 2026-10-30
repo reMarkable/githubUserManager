@@ -13,11 +13,16 @@ import (
 type fakeGoogle struct{ users set.Set }
 
 func (f fakeGoogle) GithubUsersFromGoogle(context.Context) (set.Set, error) { return f.users, nil }
+func (f fakeGoogle) GithubUsersForGroups(context.Context, []string) (map[string]set.Set, error) {
+	return nil, nil
+}
 
 type fakeGitHub struct {
 	users          set.Set
 	added, removed set.Set
 	syncCalled     bool
+	teamMapDesired map[string]set.Set
+	teamMapDrift   bool
 }
 
 func (f *fakeGitHub) UsersFromGitHub(context.Context) (set.Set, error) { return f.users, nil }
@@ -27,6 +32,10 @@ func (f *fakeGitHub) RemoveUsersFromOrg(_ context.Context, u set.Set) error {
 	return nil
 }
 func (f *fakeGitHub) SyncTeamMembers(context.Context) error { f.syncCalled = true; return nil }
+func (f *fakeGitHub) SyncTeamMap(_ context.Context, desired map[string]set.Set) (bool, error) {
+	f.teamMapDesired = desired
+	return f.teamMapDrift, nil
+}
 
 func init() { slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil))) }
 
@@ -109,5 +118,61 @@ func TestMatchExitsZero(t *testing.T) {
 	}
 	if gh.added != nil || gh.removed != nil {
 		t.Errorf("no changes expected when matched: added=%v removed=%v", gh.added, gh.removed)
+	}
+}
+
+type fakeGoogleGroups struct {
+	users  set.Set
+	groups map[string]set.Set
+}
+
+func (f fakeGoogleGroups) GithubUsersFromGoogle(context.Context) (set.Set, error) {
+	return f.users, nil
+}
+func (f fakeGoogleGroups) GithubUsersForGroups(_ context.Context, _ []string) (map[string]set.Set, error) {
+	return f.groups, nil
+}
+
+func TestTeamMapSyncUnionsGroupsPerTeam(t *testing.T) {
+	g := fakeGoogleGroups{
+		users: set.New("a"),
+		groups: map[string]set.Set{
+			"eng@x":   set.New("a", "b"),
+			"infra@x": set.New("b", "c"),
+		},
+	}
+	gh := &fakeGitHub{users: set.New("a")}
+	cfg := &config.Config{TeamMap: map[string]string{
+		"eng@x":   "platform",
+		"infra@x": "platform",
+	}}
+	if _, err := Run(context.Background(), cfg, g, gh); err != nil {
+		t.Fatal(err)
+	}
+	got := gh.teamMapDesired["platform"]
+	if got == nil || got.Len() != 3 || !got.Has("a") || !got.Has("b") || !got.Has("c") {
+		t.Errorf("platform desired = %v, want [a b c]", got.Sorted())
+	}
+}
+
+func TestTeamMapSyncSkippedWhenUnset(t *testing.T) {
+	g := fakeGoogleGroups{users: set.New("a")}
+	gh := &fakeGitHub{users: set.New("a")}
+	if _, err := Run(context.Background(), &config.Config{}, g, gh); err != nil {
+		t.Fatal(err)
+	}
+	if gh.teamMapDesired != nil {
+		t.Errorf("SyncTeamMap should not be called, got %v", gh.teamMapDesired)
+	}
+}
+
+func TestTeamMapDriftDrivesExitCode(t *testing.T) {
+	g := fakeGoogleGroups{users: set.New("a"), groups: map[string]set.Set{"eng@x": set.New("a")}}
+	gh := &fakeGitHub{users: set.New("a"), teamMapDrift: true}
+	cfg := &config.Config{ExitCodeOnMismatch: 7, TeamMap: map[string]string{"eng@x": "eng"}}
+	code, err := Run(context.Background(), cfg, g, gh)
+	_ = err
+	if code != 7 {
+		t.Errorf("exit code = %d, want 7 (team drift should flag mismatch)", code)
 	}
 }

@@ -94,3 +94,8 @@ func (r restAPI) AddTeamMembership(ctx context.Context, org, slug, username stri
 	_, _, err := r.client.Teams.AddTeamMembershipBySlug(ctx, org, slug, username, nil)
 	return err
 }
+
+func (r restAPI) RemoveTeamMembership(ctx context.Context, org, slug, username string) error {
+	_, err := r.client.Teams.RemoveTeamMembershipBySlug(ctx, org, slug, username)
+	return err
+}

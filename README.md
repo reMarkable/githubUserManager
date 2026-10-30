@@ -49,6 +49,7 @@ Right now this only handles the organization membership, it **does not** touch t
     - Client ID: `client id from user`
     - OAuth scopes:
       - `https://www.googleapis.com/auth/admin.directory.user.readonly`
+      - `https://www.googleapis.com/auth/admin.directory.group.member.readonly` (only needed for `team-map`/`team-map-file` group-to-team syncing)
 
 1.  Register new GitHub App
     1. https://github.com/settings/organizations
@@ -102,6 +103,54 @@ jobs:
           sync-team: 'true'
           team-slug: 'remarkable'
 ```
+
+#### Syncing Google Workspace groups to GitHub teams
+
+Beyond `sync-team` (which adds *every* org member to a single team), you can
+mirror the membership of specific Google Workspace groups into matching GitHub
+teams. Provide a JSON object that maps a group's email address to a GitHub team
+slug. The members of each group are resolved to their linked GitHub accounts
+(via the same `Accounts.github` custom attribute) and reconciled against the
+mapped team. Nested groups are expanded automatically.
+
+Keep the mapping in a JSON file in your repo for maintainability:
+
+```json
+// .github/github-teams.json
+{
+  "engineering@remarkable.no": "engineering",
+  "design@remarkable.no": "design",
+  "platform@remarkable.no": "platform-team"
+}
+```
+
+```yaml
+- name: Github Org Membership Manager
+  uses: docker://ghcr.io/remarkable/githubusermanager/githubusermanager:v2.0.0
+  with:
+    # ...the usual inputs...
+    github-org: 'reMarkable'
+    remove-users: 'true' # also prunes team members no longer in the group
+    team-map-file: .github/github-teams.json
+```
+
+Notes:
+
+- Members missing from a team are always added. Members present in a team but
+  not in the mapped group are only removed when `remove-users` is `true`, so you
+  can run in a safe, add-only mode first. Team removals also respect
+  `max-remove-users`, and a group that resolves to zero linked GitHub accounts
+  will never empty a team (guards against a mistyped group email).
+- Any difference between a mapped team and its group sets the
+  `exit-code-on-mismatch` exit code, so `dry-run` + `exit-code-on-mismatch`
+  reports team drift in CI without applying changes.
+- `ignored-users` are never added to or removed from mapped teams.
+- Requires the
+  `https://www.googleapis.com/auth/admin.directory.group.member.readonly` scope
+  on the service account's domain-wide delegation.
+- For a single inline mapping you can use `team-map` instead of a file, e.g.
+  `team-map: '{"engineering@remarkable.no":"engineering"}'`. `team-map-file`
+  takes precedence when both are set.
 
 Add a dependabot configuration to always get updates!
 
@@ -174,6 +223,7 @@ them as `INPUT_<NAME>` environment variables (upper-cased input name).
 | `add-users`              | Set to TRUE to add users to the github organisation                                                                             | `TRUE`            | `false` |
 | `remove-users`           | Set to TRUE to remove users from the github organisation                                                                        | `TRUE`            | `false` |
 | `remove-suspended_users` | Set to TRUE to remove users from the github organisation that are suspended in Google                                           | `TRUE`            | `false` |
+| `dry-run`                | Set to TRUE to log all intended org/team membership changes without applying them (useful with `exit-code-on-mismatch`)         | `TRUE`            | `false` |
 | `exit-code-on-mismatch`  | Exit code to use when there's a mismatch, useful when combined with `add-users` and `remove-users` to be used in a dry-run mode | `1`               | `0`     |
 | `max-remove-users`       | Safety limit on how many users may be removed in a single run                                                                   | `100`             | `100`   |
 | `github-org`             | GitHub Organization                                                                                                             | `chrisnstest`     | `null`  |
@@ -183,4 +233,6 @@ them as `INPUT_<NAME>` environment variables (upper-cased input name).
 | `ignored-users`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
 | `sync-team`              | Set to TRUE to ensure every org member is added to the team named in `team-slug`                                                | `TRUE`            | `false` |
 | `team-slug`              | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |
+| `team-map`               | Inline JSON mapping a Google Workspace group email to a GitHub team slug; members of each group are synced into the mapped team | `{"eng@x":"eng"}` | `null`  |
+| `team-map-file`          | Path to a JSON file with the same group-to-team mapping as `team-map` (preferred for maintainability; wins if both are set)      | `.github/teams.json` | `null` |
 | `debug`                  | Set to TRUE to enable debug level logging                                                                                       | `TRUE`            | `false` |
