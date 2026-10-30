@@ -7,6 +7,7 @@ import (
 	admin "google.golang.org/api/admin/directory/v1"
 	"google.golang.org/api/googleapi"
 
+	"github.com/reMarkable/githubUserManager/internal/config"
 	"github.com/reMarkable/githubUserManager/internal/set"
 )
 
@@ -71,5 +72,50 @@ func TestGithubUsersFromGooglePaginates(t *testing.T) {
 	}
 	if got.Len() != 2 || !got.Has("a") || !got.Has("b") {
 		t.Errorf("got %v, want [a b]", got.Sorted())
+	}
+}
+
+func userWithEmail(email, accountsJSON string) *admin.User {
+	u := user(accountsJSON)
+	u.PrimaryEmail = email
+	return u
+}
+
+// fakeMembers implements membersListCaller with in-memory group membership.
+type fakeMembers struct{ groups map[string][]*admin.Member }
+
+func (f *fakeMembers) ListMembers(_ context.Context, groupKey, _ string) (*admin.Members, error) {
+	return &admin.Members{Members: f.groups[groupKey]}, nil
+}
+
+func TestGithubUsersForGroupsResolvesMembers(t *testing.T) {
+	users := &fakeUsers{pages: []*admin.Users{{Users: []*admin.User{
+		userWithEmail("alice@remarkable.no", `{"github":[{"value":"Alice"}]}`),
+		userWithEmail("bob@remarkable.no", `{"github":[{"value":"bob"}]}`),
+		userWithEmail("carol@remarkable.no", `{"github":[{"value":"carol"}]}`),
+		userWithEmail("nolink@remarkable.no", ""),
+	}}}}
+	members := &fakeMembers{groups: map[string][]*admin.Member{
+		"eng@remarkable.no": {
+			{Email: "alice@remarkable.no", Type: "USER"},
+			{Email: "nested@remarkable.no", Type: "GROUP"},
+			{Email: "nolink@remarkable.no", Type: "USER"},
+		},
+		"nested@remarkable.no": {
+			{Email: "carol@remarkable.no", Type: "USER"},
+			// cycle back into the parent group; must not recurse forever.
+			{Email: "eng@remarkable.no", Type: "GROUP"},
+		},
+	}}
+	s := &Service{cfg: &config.Config{}, users: users, members: members}
+
+	got, err := s.GithubUsersForGroups(context.Background(), []string{"eng@remarkable.no"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eng := got["eng@remarkable.no"]
+	want := set.New("alice", "carol")
+	if eng.Len() != want.Len() || !eng.Has("alice") || !eng.Has("carol") {
+		t.Errorf("got %v, want %v", eng.Sorted(), want.Sorted())
 	}
 }

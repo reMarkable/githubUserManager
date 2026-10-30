@@ -14,6 +14,7 @@ import (
 // GoogleProvider supplies the desired set of GitHub users from Google Workspace.
 type GoogleProvider interface {
 	GithubUsersFromGoogle(ctx context.Context) (set.Set, error)
+	GithubUsersForGroups(ctx context.Context, groups []string) (map[string]set.Set, error)
 }
 
 // GitHubProvider reads and reconciles GitHub organisation membership.
@@ -22,11 +23,15 @@ type GitHubProvider interface {
 	AddUsersToOrg(ctx context.Context, users set.Set) error
 	RemoveUsersFromOrg(ctx context.Context, users set.Set) error
 	SyncTeamMembers(ctx context.Context) error
+	SyncTeamMap(ctx context.Context, desired map[string]set.Set) (bool, error)
 }
 
 // Run reconciles GitHub org membership against Google Workspace and returns the
 // process exit code (ExitCodeOnMismatch when the two sides differ, else 0).
 func Run(ctx context.Context, cfg *config.Config, google GoogleProvider, gh GitHubProvider) (int, error) {
+	if cfg.DryRun {
+		slog.Info("dry run enabled: no changes will be applied")
+	}
 	googleUsers, err := google.GithubUsersFromGoogle(ctx)
 	if err != nil {
 		return 0, err
@@ -72,8 +77,50 @@ func Run(ctx context.Context, cfg *config.Config, google GoogleProvider, gh GitH
 		}
 	}
 
-	if usersNotInGoogle.Len() > 0 || usersNotInGitHub.Len() > 0 {
+	teamMapDrift := false
+	if len(cfg.TeamMap) > 0 {
+		drift, err := syncTeamMap(ctx, cfg, google, gh)
+		if err != nil {
+			return 0, err
+		}
+		teamMapDrift = drift
+	}
+
+	if usersNotInGoogle.Len() > 0 || usersNotInGitHub.Len() > 0 || teamMapDrift {
 		return cfg.ExitCodeOnMismatch, nil
 	}
 	return 0, nil
+}
+
+// syncTeamMap resolves each configured Google Workspace group to its members'
+// GitHub usernames and reconciles the mapped GitHub team membership. Multiple
+// groups mapping to the same team slug are unioned. It returns true when any
+// mapped team differed from its group so callers can flag a mismatch.
+func syncTeamMap(ctx context.Context, cfg *config.Config, google GoogleProvider, gh GitHubProvider) (bool, error) {
+	groups := make([]string, 0, len(cfg.TeamMap))
+	for group := range cfg.TeamMap {
+		groups = append(groups, group)
+	}
+
+	byGroup, err := google.GithubUsersForGroups(ctx, groups)
+	if err != nil {
+		return false, err
+	}
+
+	desired := make(map[string]set.Set, len(cfg.TeamMap))
+	for group, slug := range cfg.TeamMap {
+		members := byGroup[group]
+		slog.Info("group members resolved to github", "group", group, "team", slug,
+			"users", strings.Join(members.Sorted(), ", "))
+		team, ok := desired[slug]
+		if !ok {
+			team = set.New()
+			desired[slug] = team
+		}
+		for _, user := range members.Sorted() {
+			team.Add(user)
+		}
+	}
+
+	return gh.SyncTeamMap(ctx, desired)
 }
