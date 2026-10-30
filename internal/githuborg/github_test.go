@@ -22,6 +22,7 @@ type fakeAPI struct {
 	invited      []int64
 	removed      []string
 	teamAdded    []string
+	teamRemoved  []string
 	addTeamErr   map[string]error
 	getUserIDErr error
 }
@@ -52,6 +53,10 @@ func (f *fakeAPI) AddTeamMembership(_ context.Context, _, _, u string) error {
 		return err
 	}
 	f.teamAdded = append(f.teamAdded, u)
+	return nil
+}
+func (f *fakeAPI) RemoveTeamMembership(_ context.Context, _, _, u string) error {
+	f.teamRemoved = append(f.teamRemoved, u)
 	return nil
 }
 
@@ -155,5 +160,127 @@ func TestSyncTeamContinuesPastErrors(t *testing.T) {
 	}
 	if len(api.teamAdded) != 1 || api.teamAdded[0] != "foo" {
 		t.Errorf("teamAdded = %v, want [foo]", api.teamAdded)
+	}
+}
+
+func TestSyncTeamMapAddsMissing(t *testing.T) {
+	api := &fakeAPI{teamMembers: []string{"keep"}}
+	s := svc(api, &config.Config{GitHubOrg: "myorg"})
+	desired := map[string]set.Set{"engineering": set.New("keep", "foo", "bar")}
+	if _, err := s.SyncTeamMap(context.Background(), desired); err != nil {
+		t.Fatal(err)
+	}
+	want := set.New("foo", "bar")
+	if len(api.teamAdded) != 2 {
+		t.Fatalf("teamAdded = %v, want foo,bar", api.teamAdded)
+	}
+	for _, u := range api.teamAdded {
+		if !want.Has(u) {
+			t.Errorf("unexpected team add %s", u)
+		}
+	}
+	if len(api.teamRemoved) != 0 {
+		t.Errorf("teamRemoved = %v, want none (remove-users disabled)", api.teamRemoved)
+	}
+}
+
+func TestSyncTeamMapRemovesExtraOnlyWhenEnabled(t *testing.T) {
+	// remove-users disabled: extra member kept.
+	api := &fakeAPI{teamMembers: []string{"foo", "stale"}}
+	s := svc(api, &config.Config{GitHubOrg: "myorg"})
+	desired := map[string]set.Set{"eng": set.New("foo")}
+	if _, err := s.SyncTeamMap(context.Background(), desired); err != nil {
+		t.Fatal(err)
+	}
+	if len(api.teamRemoved) != 0 {
+		t.Errorf("teamRemoved = %v, want none", api.teamRemoved)
+	}
+
+	// remove-users enabled: extra member removed, ignored user preserved.
+	api = &fakeAPI{teamMembers: []string{"foo", "stale", "owner"}}
+	s = svc(api, &config.Config{GitHubOrg: "myorg", RemoveUsers: true, MaxRemoveUsers: 100, IgnoredUsers: []string{"owner"}})
+	if _, err := s.SyncTeamMap(context.Background(), desired); err != nil {
+		t.Fatal(err)
+	}
+	if len(api.teamRemoved) != 1 || api.teamRemoved[0] != "stale" {
+		t.Errorf("teamRemoved = %v, want [stale]", api.teamRemoved)
+	}
+}
+
+func TestDryRunSkipsOrgAndTeamMutations(t *testing.T) {
+	api := &fakeAPI{
+		userIDs:     map[string]int64{"foo": 42},
+		teamMembers: []string{"stale"},
+	}
+	cfg := &config.Config{GitHubOrg: "myorg", GitHubTeamSlug: "remarkable", DryRun: true, RemoveUsers: true}
+	s := svc(api, cfg)
+
+	if err := s.AddUsersToOrg(context.Background(), set.New("foo")); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RemoveUsersFromOrg(context.Background(), set.New("bar")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"remarkable": set.New("foo")}); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(api.invited) != 0 {
+		t.Errorf("dry run invited = %v, want none", api.invited)
+	}
+	if len(api.removed) != 0 {
+		t.Errorf("dry run removed = %v, want none", api.removed)
+	}
+	if len(api.teamAdded) != 0 {
+		t.Errorf("dry run teamAdded = %v, want none", api.teamAdded)
+	}
+	if len(api.teamRemoved) != 0 {
+		t.Errorf("dry run teamRemoved = %v, want none", api.teamRemoved)
+	}
+}
+
+func TestSyncTeamMapRefusesEmptyGroupWipe(t *testing.T) {
+	api := &fakeAPI{teamMembers: []string{"foo", "bar"}}
+	s := svc(api, &config.Config{GitHubOrg: "myorg", RemoveUsers: true, MaxRemoveUsers: 100})
+	// Group resolved to zero github users -> must not empty the team.
+	drift, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"eng": set.New()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !drift {
+		t.Error("expected drift=true when team differs from (empty) group")
+	}
+	if len(api.teamRemoved) != 0 {
+		t.Errorf("teamRemoved = %v, want none (empty group must not wipe team)", api.teamRemoved)
+	}
+}
+
+func TestSyncTeamMapRemovalCapped(t *testing.T) {
+	api := &fakeAPI{teamMembers: []string{"a", "b", "c"}}
+	s := svc(api, &config.Config{GitHubOrg: "myorg", RemoveUsers: true, MaxRemoveUsers: 2})
+	// Desired keeps one member; 2 would be removed but cap is... 2, so allowed.
+	// Make extra exceed the cap: keep none-desired beyond cap.
+	drift, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"eng": set.New("keep")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !drift {
+		t.Error("expected drift=true")
+	}
+	// current has a,b,c; want keep -> extra=3 > max 2 -> skip all removals.
+	if len(api.teamRemoved) != 0 {
+		t.Errorf("teamRemoved = %v, want none (over cap)", api.teamRemoved)
+	}
+}
+
+func TestSyncTeamMapReturnsDriftFalseWhenInSync(t *testing.T) {
+	api := &fakeAPI{teamMembers: []string{"foo"}}
+	s := svc(api, &config.Config{GitHubOrg: "myorg"})
+	drift, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"eng": set.New("foo")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if drift {
+		t.Error("expected drift=false when team already matches group")
 	}
 }

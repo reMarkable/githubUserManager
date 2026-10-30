@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/base64"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -119,5 +120,92 @@ func TestLoadRejectsBadBase64(t *testing.T) {
 	inputs["github-private-key"] = "!!!notbase64!!!"
 	if _, err := Load(inputs); err == nil {
 		t.Error("expected error for invalid base64 github-private-key")
+	}
+}
+
+func TestTeamMapInlineJSON(t *testing.T) {
+	inputs := validInputs()
+	inputs["team-map"] = `{"Eng@remarkable.no":"engineering"," design@remarkable.no ":"design","":"skip","empty-slug@x":""}`
+	cfg, err := Load(inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"eng@remarkable.no":    "engineering",
+		"design@remarkable.no": "design",
+	}
+	if !reflect.DeepEqual(cfg.TeamMap, want) {
+		t.Errorf("TeamMap = %v, want %v", cfg.TeamMap, want)
+	}
+}
+
+func TestTeamMapFileTakesPrecedence(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/teams.json"
+	if err := os.WriteFile(path, []byte(`{"platform@remarkable.no":"platform"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	inputs := validInputs()
+	inputs["team-map"] = `{"ignored@x":"ignored"}`
+	inputs["team-map-file"] = path
+	cfg, err := Load(inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"platform@remarkable.no": "platform"}
+	if !reflect.DeepEqual(cfg.TeamMap, want) {
+		t.Errorf("TeamMap = %v, want %v", cfg.TeamMap, want)
+	}
+}
+
+func TestTeamMapUnsetIsNil(t *testing.T) {
+	cfg, err := Load(validInputs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.TeamMap != nil {
+		t.Errorf("TeamMap = %v, want nil", cfg.TeamMap)
+	}
+}
+
+func TestTeamMapRejectsBadJSON(t *testing.T) {
+	inputs := validInputs()
+	inputs["team-map"] = `not json`
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error for invalid team-map JSON")
+	}
+}
+
+func TestDryRun(t *testing.T) {
+	cfg, _ := Load(validInputs())
+	if cfg.DryRun {
+		t.Error("DryRun should default to false")
+	}
+	inputs := validInputs()
+	inputs["dry-run"] = "TRUE"
+	cfg, _ = Load(inputs)
+	if !cfg.DryRun {
+		t.Error("DryRun should be true when dry-run=TRUE")
+	}
+}
+
+func TestTeamMapFileMissing(t *testing.T) {
+	inputs := validInputs()
+	inputs["team-map-file"] = "/no/such/teams.json"
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error when team-map-file does not exist")
+	}
+}
+
+func TestTeamMapFileInvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/teams.json"
+	if err := os.WriteFile(path, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	inputs := validInputs()
+	inputs["team-map-file"] = path
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error for invalid JSON in team-map-file")
 	}
 }

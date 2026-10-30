@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -35,6 +36,7 @@ type Config struct {
 	AddUsers             bool
 	RemoveUsers          bool
 	RemoveSuspendedUsers bool
+	DryRun               bool
 	ExitCodeOnMismatch   int
 	MaxRemoveUsers       int
 	Debug                bool
@@ -45,7 +47,10 @@ type Config struct {
 	GitHubPrivateKey     string
 	GitHubTeamSlug       string
 	SyncTeam             bool
-	IgnoredUsers         []string
+	// TeamMap maps a Google Workspace group email (lower-cased) to the GitHub
+	// team slug whose membership should mirror that group. Empty when unset.
+	TeamMap      map[string]string
+	IgnoredUsers []string
 
 	GoogleEmailAddress string
 	GoogleCredentials  GoogleCredentials
@@ -60,6 +65,7 @@ func Load(src InputSource) (*Config, error) {
 		AddUsers:             boolVal(src.GetInput("add-users")),
 		RemoveUsers:          boolVal(src.GetInput("remove-users")),
 		RemoveSuspendedUsers: boolVal(src.GetInput("remove-suspended_users")),
+		DryRun:               boolVal(src.GetInput("dry-run")),
 		ExitCodeOnMismatch:   intOr(src.GetInput("exit-code-on-mismatch"), 0),
 		MaxRemoveUsers:       intOr(src.GetInput("max-remove-users"), 100),
 		Debug:                boolVal(src.GetInput("debug")),
@@ -97,7 +103,50 @@ func Load(src InputSource) (*Config, error) {
 		return nil, fmt.Errorf("google-credentials is not valid JSON: %w", err)
 	}
 
+	teamMap, err := loadTeamMap(src.GetInput("team-map-file"), src.GetInput("team-map"))
+	if err != nil {
+		return nil, err
+	}
+	c.TeamMap = teamMap
+
 	return c, nil
+}
+
+// loadTeamMap resolves the group-to-team mapping from either a JSON file
+// (team-map-file, preferred for maintainability) or inline JSON (team-map).
+// The file takes precedence when both are set. Keys (group emails) are
+// lower-cased and trimmed; empty entries are dropped.
+func loadTeamMap(path, inline string) (map[string]string, error) {
+	raw := strings.TrimSpace(inline)
+	if p := strings.TrimSpace(path); p != "" {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return nil, fmt.Errorf("reading team-map-file %q: %w", p, err)
+		}
+		raw = strings.TrimSpace(string(b))
+	}
+	if raw == "" {
+		return nil, nil
+	}
+
+	var parsed map[string]string
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil, fmt.Errorf("team map is not valid JSON (expected {\"group@domain\":\"team-slug\"}): %w", err)
+	}
+
+	out := make(map[string]string, len(parsed))
+	for group, slug := range parsed {
+		g := strings.TrimSpace(strings.ToLower(group))
+		s := strings.TrimSpace(slug)
+		if g == "" || s == "" {
+			continue
+		}
+		out[g] = s
+	}
+	if len(out) == 0 {
+		return nil, nil
+	}
+	return out, nil
 }
 
 func boolVal(s string) bool {
