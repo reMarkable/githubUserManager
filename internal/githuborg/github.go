@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/google/go-github/v88/github"
@@ -25,6 +26,7 @@ type api interface {
 	RemoveMembership(ctx context.Context, org, username string) error
 	ListTeamMembers(ctx context.Context, org, slug string) ([]string, error)
 	AddTeamMembership(ctx context.Context, org, slug, username string) error
+	RemoveTeamMembership(ctx context.Context, org, slug, username string) error
 }
 
 // Service applies membership changes against a GitHub organisation.
@@ -85,6 +87,10 @@ func (s *Service) AddUsersToOrg(ctx context.Context, users set.Set) error {
 			slog.Info("ignoring add", "user", user)
 			continue
 		}
+		if s.cfg.DryRun {
+			slog.Info("dry run: skipping org invite", "user", user, "org", s.cfg.GitHubOrg)
+			continue
+		}
 		userID, err := s.api.GetUserID(ctx, user)
 		if err != nil {
 			return fmt.Errorf("unable to find user id for %s: %w", user, err)
@@ -105,6 +111,10 @@ func (s *Service) RemoveUsersFromOrg(ctx context.Context, users set.Set) error {
 			continue
 		}
 		slog.Info("removing user/invitation", "user", user, "org", s.cfg.GitHubOrg)
+		if s.cfg.DryRun {
+			slog.Info("dry run: skipping org removal", "user", user, "org", s.cfg.GitHubOrg)
+			continue
+		}
 		if err := s.api.RemoveMembership(ctx, s.cfg.GitHubOrg, user); err != nil {
 			return fmt.Errorf("removing %s: %w", user, err)
 		}
@@ -139,6 +149,10 @@ func (s *Service) SyncTeamMembers(ctx context.Context) error {
 			continue
 		}
 		slog.Info("adding user to team", "user", user, "team", s.cfg.GitHubTeamSlug)
+		if s.cfg.DryRun {
+			slog.Info("dry run: skipping team add", "user", user, "team", s.cfg.GitHubTeamSlug)
+			continue
+		}
 		// Mirror the Node behaviour: log and continue past per-user failures
 		// (e.g. SAML SSO validation errors) rather than aborting the sync.
 		if err := s.api.AddTeamMembership(ctx, s.cfg.GitHubOrg, s.cfg.GitHubTeamSlug, user); err != nil {
@@ -146,6 +160,96 @@ func (s *Service) SyncTeamMembers(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// SyncTeamMap reconciles each GitHub team against the desired set of members
+// resolved from its mapped Google Workspace group. Missing members are always
+// added; members present in the team but not in the group are only removed when
+// remove-users is enabled, keeping the dry-run behaviour consistent with org
+// membership reconciliation. It returns true when any team differed from its
+// group (regardless of whether changes were applied) so callers can surface a
+// mismatch exit code.
+func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (bool, error) {
+	slugs := make([]string, 0, len(desired))
+	for slug := range desired {
+		slugs = append(slugs, slug)
+	}
+	sort.Strings(slugs)
+
+	drift := false
+	for _, slug := range slugs {
+		want := desired[slug]
+		currentRaw, err := s.api.ListTeamMembers(ctx, s.cfg.GitHubOrg, slug)
+		if err != nil {
+			return drift, fmt.Errorf("listing members of team %s: %w", slug, err)
+		}
+		current := formatUserList(currentRaw)
+
+		missing := want.Diff(current)
+		extra := current.Diff(want)
+
+		if missing.Len() == 0 && extra.Len() == 0 {
+			slog.Info("team already in sync with group", "team", slug)
+			continue
+		}
+		drift = true
+
+		for _, user := range missing.Sorted() {
+			if s.isIgnored(user) {
+				slog.Info("ignoring team add", "user", user, "team", slug)
+				continue
+			}
+			slog.Info("adding user to team", "user", user, "team", slug)
+			if s.cfg.DryRun {
+				slog.Info("dry run: skipping team add", "user", user, "team", slug)
+				continue
+			}
+			// Mirror SyncTeamMembers: log and continue past per-user failures
+			// (e.g. SAML SSO validation errors) rather than aborting.
+			if err := s.api.AddTeamMembership(ctx, s.cfg.GitHubOrg, slug, user); err != nil {
+				slog.Warn("skipping team add", "user", user, "team", slug, "err", err)
+			}
+		}
+
+		if extra.Len() == 0 {
+			continue
+		}
+		if !s.cfg.RemoveUsers {
+			slog.Info("team members not in group (not removing, remove-users disabled)",
+				"team", slug, "users", strings.Join(extra.Sorted(), ", "))
+			continue
+		}
+		// Safety: a group that resolves to no linked GitHub accounts (e.g. a
+		// typo'd group email or members who haven't linked GitHub) must not be
+		// treated as "remove everyone".
+		if want.Len() == 0 {
+			slog.Warn("group resolved to zero github users; refusing to empty team",
+				"team", slug, "current", strings.Join(extra.Sorted(), ", "))
+			continue
+		}
+		// Safety: mirror the org MaxRemoveUsers guard so a mapping mistake can't
+		// mass-remove a whole team in one run.
+		if extra.Len() > s.cfg.MaxRemoveUsers {
+			slog.Warn("not removing team members because there are too many",
+				"team", slug, "count", extra.Len(), "max", s.cfg.MaxRemoveUsers)
+			continue
+		}
+		for _, user := range extra.Sorted() {
+			if s.isIgnored(user) {
+				slog.Info("ignoring team remove", "user", user, "team", slug)
+				continue
+			}
+			slog.Info("removing user from team", "user", user, "team", slug)
+			if s.cfg.DryRun {
+				slog.Info("dry run: skipping team remove", "user", user, "team", slug)
+				continue
+			}
+			if err := s.api.RemoveTeamMembership(ctx, s.cfg.GitHubOrg, slug, user); err != nil {
+				slog.Warn("skipping team remove", "user", user, "team", slug, "err", err)
+			}
+		}
+	}
+	return drift, nil
 }
 
 // formatUserList lower-cases and de-duplicates a list of GitHub logins.
