@@ -163,18 +163,34 @@ func (s *Service) SyncTeamMembers(ctx context.Context) error {
 }
 
 // SyncTeamMap reconciles each GitHub team against the desired set of members
-// resolved from its mapped Google Workspace group. Missing members are always
-// added; members present in the team but not in the group are only removed when
-// remove-users is enabled, keeping the dry-run behaviour consistent with org
-// membership reconciliation. It returns true when any team differed from its
-// group (regardless of whether changes were applied) so callers can surface a
-// mismatch exit code.
+// resolved from its mapped Google Workspace group. Missing members are added
+// (subject to the add-users gate below); members present in the team but not in
+// the group are only removed when remove-users is enabled, keeping the dry-run
+// behaviour consistent with org membership reconciliation. When add-users is
+// disabled, members who aren't already in the org are skipped so a team add
+// can't invite people to the org as a side effect. It returns true when any
+// team differed from its group (regardless of whether changes were applied) so
+// callers can surface a mismatch exit code.
 func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (bool, error) {
 	slugs := make([]string, 0, len(desired))
 	for slug := range desired {
 		slugs = append(slugs, slug)
 	}
 	sort.Strings(slugs)
+
+	// Adding a non-member to a team via AddTeamMembership creates a pending org
+	// invitation as a side effect. When add-users is disabled the operator has
+	// opted out of inviting people, so gate team adds for users who aren't yet
+	// org members (members or pending invites). We only pay for this lookup when
+	// add-users is off, since otherwise those users are invited upstream anyway.
+	var orgMembers set.Set
+	if !s.cfg.AddUsers {
+		current, err := s.UsersFromGitHub(ctx)
+		if err != nil {
+			return false, fmt.Errorf("listing org members for team sync: %w", err)
+		}
+		orgMembers = current
+	}
 
 	drift := false
 	for _, slug := range slugs {
@@ -197,6 +213,11 @@ func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (
 		for _, user := range missing.Sorted() {
 			if s.isIgnored(user) {
 				slog.Info("ignoring team add", "user", user, "team", slug)
+				continue
+			}
+			if orgMembers != nil && !orgMembers.Has(user) {
+				slog.Info("not adding user to team: not an org member and add-users disabled",
+					"user", user, "team", slug)
 				continue
 			}
 			slog.Info("adding user to team", "user", user, "team", slug)
