@@ -165,7 +165,7 @@ func TestSyncTeamContinuesPastErrors(t *testing.T) {
 
 func TestSyncTeamMapAddsMissing(t *testing.T) {
 	api := &fakeAPI{teamMembers: []string{"keep"}}
-	s := svc(api, &config.Config{GitHubOrg: "myorg"})
+	s := svc(api, &config.Config{GitHubOrg: "myorg", AddUsers: true})
 	desired := map[string]set.Set{"engineering": set.New("keep", "foo", "bar")}
 	if _, err := s.SyncTeamMap(context.Background(), desired); err != nil {
 		t.Fatal(err)
@@ -181,6 +181,37 @@ func TestSyncTeamMapAddsMissing(t *testing.T) {
 	}
 	if len(api.teamRemoved) != 0 {
 		t.Errorf("teamRemoved = %v, want none (remove-users disabled)", api.teamRemoved)
+	}
+}
+
+func TestSyncTeamMapSkipsNonMembersWhenAddUsersDisabled(t *testing.T) {
+	// add-users disabled: a group member who is already an org member gets
+	// added to the team, but one who isn't an org member is skipped so the
+	// team add can't invite them to the org as a side effect.
+	api := &fakeAPI{
+		orgMembers:  []string{"member"},
+		pending:     []string{"invitee"},
+		teamMembers: []string{"keep"},
+	}
+	s := svc(api, &config.Config{GitHubOrg: "myorg"})
+	desired := map[string]set.Set{"engineering": set.New("keep", "member", "invitee", "stranger")}
+	drift, err := s.SyncTeamMap(context.Background(), desired)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !drift {
+		t.Error("expected drift=true when team differs from group")
+	}
+	// "member" (org member) and "invitee" (pending invite) are added; "stranger"
+	// is skipped because add-users is disabled.
+	want := set.New("member", "invitee")
+	if len(api.teamAdded) != 2 {
+		t.Fatalf("teamAdded = %v, want member,invitee", api.teamAdded)
+	}
+	for _, u := range api.teamAdded {
+		if !want.Has(u) {
+			t.Errorf("unexpected team add %s (stranger should be skipped)", u)
+		}
 	}
 }
 
