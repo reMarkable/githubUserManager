@@ -2,6 +2,8 @@ package googlews
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	admin "google.golang.org/api/admin/directory/v1"
@@ -59,6 +61,31 @@ func (f *fakeUsers) List(_ context.Context, token string) (*admin.Users, error) 
 		}
 	}
 	return f.pages[idx], nil
+}
+
+type errUsers struct{}
+
+func (errUsers) List(context.Context, string) (*admin.Users, error) {
+	return nil, fmt.Errorf("boom")
+}
+
+func TestListErrorNamesSubject(t *testing.T) {
+	s := &Service{cfg: &config.Config{GoogleEmailAddress: "admin@example.com"}, users: errUsers{}}
+	_, err := s.GithubUsersFromGoogle(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "admin@example.com") {
+		t.Fatalf("err = %v, want subject", err)
+	}
+}
+
+func TestScopesForTeamMap(t *testing.T) {
+	got := scopesFor(&config.Config{})
+	if len(got) != 1 || got[0] != userScope {
+		t.Fatalf("no team map: %v", got)
+	}
+	got = scopesFor(&config.Config{TeamMap: map[string]string{"eng@x": "eng"}})
+	if len(got) != 2 || got[0] != userScope || got[1] != memberScope {
+		t.Fatalf("team map: %v", got)
+	}
 }
 
 func TestGithubUsersFromGooglePaginates(t *testing.T) {
