@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"golang.org/x/oauth2/google"
@@ -43,11 +44,24 @@ type membersListCaller interface {
 // New builds a Service backed by the real Admin Directory API using JWT
 // domain-wide delegation (impersonating the configured admin email address).
 func New(ctx context.Context, cfg *config.Config) (*Service, error) {
-	jwtCfg, err := google.JWTConfigFromJSON(cfg.GoogleCredentialsJSON, userScope, memberScope)
+	scopes := scopesFor(cfg)
+	jwtCfg, err := google.JWTConfigFromJSON(cfg.GoogleCredentialsJSON, scopes...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing google credentials: %w", err)
 	}
 	jwtCfg.Subject = cfg.GoogleEmailAddress
+	slog.Info("google directory auth",
+		"subject", jwtCfg.Subject,
+		"service_account", jwtCfg.Email,
+		"client_id", cfg.GoogleCredentials.ClientID,
+		"scopes", jwtCfg.Scopes,
+	)
+	if strings.TrimSpace(jwtCfg.Subject) == "" {
+		return nil, fmt.Errorf("google-email-address is empty; domain-wide delegation needs an admin to impersonate")
+	}
+	if jwtCfg.Subject != strings.TrimSpace(jwtCfg.Subject) {
+		slog.Warn("google-email-address has surrounding whitespace", "subject", jwtCfg.Subject)
+	}
 
 	svc, err := admin.NewService(ctx, option.WithHTTPClient(jwtCfg.Client(ctx)))
 	if err != nil {
@@ -60,13 +74,30 @@ func New(ctx context.Context, cfg *config.Config) (*Service, error) {
 
 // GithubUsersFromGoogle returns the set of GitHub usernames linked across all
 // Google Workspace users, paging through the directory.
+// scopesFor is the JWT scope list. Group-member scope is only requested when
+// a team map is configured; asking for it unconditionally makes domain-wide
+// delegation reject the token for installs that only granted user.readonly.
+func scopesFor(cfg *config.Config) []string {
+	if cfg != nil && len(cfg.TeamMap) > 0 {
+		return []string{userScope, memberScope}
+	}
+	return []string{userScope}
+}
+
+func (s *Service) subject() string {
+	if s.cfg == nil {
+		return ""
+	}
+	return s.cfg.GoogleEmailAddress
+}
+
 func (s *Service) GithubUsersFromGoogle(ctx context.Context) (set.Set, error) {
 	accounts := set.New()
 	pageToken := ""
 	for {
 		resp, err := s.users.List(ctx, pageToken)
 		if err != nil {
-			return nil, fmt.Errorf("listing google users: %w", err)
+			return nil, fmt.Errorf("listing google users as %q scopes %s: %w", s.subject(), strings.Join(scopesFor(s.cfg), " "), err)
 		}
 		for _, u := range formatUserList(resp.Users) {
 			accounts.Add(u)
@@ -97,7 +128,7 @@ func (s *Service) GithubUsersForGroups(ctx context.Context, groups []string) (ma
 		}
 		emails, err := s.groupMemberEmails(ctx, group, map[string]bool{})
 		if err != nil {
-			return nil, fmt.Errorf("listing members of group %s: %w", group, err)
+			return nil, fmt.Errorf("listing members of group %s as %q: %w", group, s.subject(), err)
 		}
 		accounts := set.New()
 		for _, email := range emails {
@@ -118,7 +149,7 @@ func (s *Service) emailToGithub(ctx context.Context) (map[string]set.Set, error)
 	for {
 		resp, err := s.users.List(ctx, pageToken)
 		if err != nil {
-			return nil, fmt.Errorf("listing google users: %w", err)
+			return nil, fmt.Errorf("listing google users as %q scopes %s: %w", s.subject(), strings.Join(scopesFor(s.cfg), " "), err)
 		}
 		for _, u := range resp.Users {
 			if u == nil || u.PrimaryEmail == "" {
