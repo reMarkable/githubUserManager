@@ -152,6 +152,53 @@ Notes:
   `team-map: '{"engineering@remarkable.no":"engineering"}'`. `team-map-file`
   takes precedence when both are set.
 
+##### Enterprise teams
+
+To sync a group into an [enterprise team](https://docs.github.com/en/enterprise-cloud@latest/rest/enterprise-teams/enterprise-team-members)
+instead of an org team, use the enterprise team's slug. GitHub gives every
+enterprise team slug an `ent:` prefix, and that prefix is how this tool tells
+it apart from an org team. Org team slugs can't contain a colon, so the two
+never collide.
+
+```json
+{
+  "engineering@remarkable.no": "engineering",
+  "platform@remarkable.no": "ent:platform"
+}
+```
+
+The enterprise team endpoints only accept a token for an installation of the
+app on the **enterprise**. The org installation can't call them. To set this up:
+
+1. Change the app's visibility to `internal`. Apps with enterprise
+   permissions must be `internal` or `public` to be installed on an enterprise,
+   and the default `Only on this account` (private) blocks that. `internal`
+   still limits installs to your own enterprise. The app can stay owned by the
+   org.
+1. Add the enterprise permission `Enterprise teams: Read and write`. The org
+   installation then has to accept the updated permissions.
+1. As an enterprise owner, install the app on the enterprise via
+   `https://github.com/apps/<app-name>/installations/new` and note the
+   enterprise installation ID. The enterprise installation only receives the
+   enterprise permissions, and the org installation only receives the org
+   permissions.
+1. Set `github-enterprise` (the enterprise slug) and
+   `github-enterprise-installation-id`. The same `github-app-id` and
+   `github-private-key` are used for both installations.
+
+```yaml
+  with:
+    # ...the usual inputs...
+    github-enterprise: 'remarkable'
+    github-enterprise-installation-id: 67890
+    team-map-file: .github/github-teams.json
+```
+
+Enterprise teams follow the same rules as org teams: `add-users`/`remove-users`
+gating, `max-remove-users`, the empty-group guard, `ignored-users` and
+`dry-run`. When `add-users` is off, only users who are already members of (or
+invited to) `github-org` are added.
+
 Add a dependabot configuration to always get updates!
 
 ```yaml
@@ -233,6 +280,8 @@ them as `INPUT_<NAME>` environment variables (upper-cased input name).
 | `ignored-users`          | Comma separated list of user ids to totally ignore always, useful for owners of an org you don't want accidentally removed      | `owner1,owner2`   | `null`  |
 | `sync-team`              | Set to TRUE to ensure every org member is added to the team named in `team-slug`                                                | `TRUE`            | `false` |
 | `team-slug`              | Slug of the team every org member should be added to, e.g. to grant PR rights to shared repos                                   | `remarkable`      | `null`  |
-| `team-map`               | Inline JSON mapping a Google Workspace group email to a GitHub team slug; members of each group are synced into the mapped team | `{"eng@x":"eng"}` | `null`  |
+| `team-map`               | Inline JSON mapping a Google Workspace group email to a GitHub team slug (use the `ent:`-prefixed slug for an enterprise team); members of each group are synced into the mapped team | `{"eng@x":"eng"}` | `null`  |
 | `team-map-file`          | Path to a JSON file with the same group-to-team mapping as `team-map` (preferred for maintainability; wins if both are set)      | `.github/teams.json` | `null` |
+| `github-enterprise`      | Enterprise slug that owns the `ent:` teams in the team map (required only if you map an enterprise team)                      | `remarkable`         | `null` |
+| `github-enterprise-installation-id` | Installation ID of the GitHub App on the enterprise (required only if you map an enterprise team)                         | `67890`              | `null` |
 | `debug`                  | Set to TRUE to enable debug level logging                                                                                       | `TRUE`            | `false` |

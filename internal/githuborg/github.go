@@ -29,10 +29,21 @@ type api interface {
 	RemoveTeamMembership(ctx context.Context, org, slug, username string) error
 }
 
+// enterpriseAPI is the subset of the enterprise teams REST API used to sync
+// enterprise team membership. It must be backed by a GitHub App installation on
+// the enterprise (not the org), with the "Enterprise teams" permission.
+type enterpriseAPI interface {
+	ListEnterpriseTeamMembers(ctx context.Context, enterprise, team string) ([]string, error)
+	AddEnterpriseTeamMember(ctx context.Context, enterprise, team, username string) error
+	RemoveEnterpriseTeamMember(ctx context.Context, enterprise, team, username string) error
+}
+
 // Service applies membership changes against a GitHub organisation.
 type Service struct {
 	cfg *config.Config
 	api api
+	// ent is nil unless the team map references enterprise teams.
+	ent enterpriseAPI
 }
 
 // New builds a Service authenticated as the configured GitHub App installation.
@@ -50,7 +61,62 @@ func New(cfg *config.Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating github client: %w", err)
 	}
-	return &Service{cfg: cfg, api: restAPI{client: client}}, nil
+	s := &Service{cfg: cfg, api: restAPI{client: client}}
+
+	if cfg.HasEnterpriseTeams() {
+		// Enterprise team endpoints need a token for the app's enterprise
+		// installation; the org installation token is rejected.
+		entTransport, err := newAppTransport(
+			http.DefaultTransport,
+			cfg.GitHubAppID,
+			cfg.GitHubEnterpriseInstallationID,
+			[]byte(cfg.GitHubPrivateKey),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("creating github enterprise app transport: %w", err)
+		}
+		entClient, err := github.NewClient(github.WithHTTPClient(&http.Client{Transport: entTransport}))
+		if err != nil {
+			return nil, fmt.Errorf("creating github enterprise client: %w", err)
+		}
+		s.ent = restAPI{client: entClient}
+	}
+	return s, nil
+}
+
+// teamOps abstracts list/add/remove for a single team so SyncTeamMap can treat
+// org teams and enterprise teams uniformly.
+type teamOps struct {
+	list   func(ctx context.Context) ([]string, error)
+	add    func(ctx context.Context, username string) error
+	remove func(ctx context.Context, username string) error
+}
+
+// teamOpsFor resolves a team map value (see config.ParseTeamRef) to the API
+// calls that manage that team.
+func (s *Service) teamOpsFor(team string) (teamOps, error) {
+	ref := config.ParseTeamRef(team)
+	if !ref.Enterprise {
+		org := s.cfg.GitHubOrg
+		return teamOps{
+			list:   func(ctx context.Context) ([]string, error) { return s.api.ListTeamMembers(ctx, org, ref.Slug) },
+			add:    func(ctx context.Context, u string) error { return s.api.AddTeamMembership(ctx, org, ref.Slug, u) },
+			remove: func(ctx context.Context, u string) error { return s.api.RemoveTeamMembership(ctx, org, ref.Slug, u) },
+		}, nil
+	}
+	if s.ent == nil || s.cfg.GitHubEnterprise == "" {
+		return teamOps{}, fmt.Errorf("team %s is an enterprise team but github-enterprise / github-enterprise-installation-id are not configured", team)
+	}
+	ent := s.cfg.GitHubEnterprise
+	return teamOps{
+		list: func(ctx context.Context) ([]string, error) {
+			return s.ent.ListEnterpriseTeamMembers(ctx, ent, ref.Slug)
+		},
+		add: func(ctx context.Context, u string) error { return s.ent.AddEnterpriseTeamMember(ctx, ent, ref.Slug, u) },
+		remove: func(ctx context.Context, u string) error {
+			return s.ent.RemoveEnterpriseTeamMember(ctx, ent, ref.Slug, u)
+		},
+	}, nil
 }
 
 func (s *Service) isIgnored(user string) bool {
@@ -171,6 +237,10 @@ func (s *Service) SyncTeamMembers(ctx context.Context) error {
 // can't invite people to the org as a side effect. It returns true when any
 // team differed from its group (regardless of whether changes were applied) so
 // callers can surface a mismatch exit code.
+//
+// Keys of desired are team map values: an org team slug, or an "ent:"-prefixed
+// enterprise team slug in cfg.GitHubEnterprise. Both
+// kinds go through the same add/remove gates and safety guards.
 func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (bool, error) {
 	slugs := make([]string, 0, len(desired))
 	for slug := range desired {
@@ -195,7 +265,11 @@ func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (
 	drift := false
 	for _, slug := range slugs {
 		want := desired[slug]
-		currentRaw, err := s.api.ListTeamMembers(ctx, s.cfg.GitHubOrg, slug)
+		ops, err := s.teamOpsFor(slug)
+		if err != nil {
+			return drift, err
+		}
+		currentRaw, err := ops.list(ctx)
 		if err != nil {
 			return drift, fmt.Errorf("listing members of team %s: %w", slug, err)
 		}
@@ -227,7 +301,7 @@ func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (
 			}
 			// Mirror SyncTeamMembers: log and continue past per-user failures
 			// (e.g. SAML SSO validation errors) rather than aborting.
-			if err := s.api.AddTeamMembership(ctx, s.cfg.GitHubOrg, slug, user); err != nil {
+			if err := ops.add(ctx, user); err != nil {
 				slog.Warn("skipping team add", "user", user, "team", slug, "err", err)
 			}
 		}
@@ -265,7 +339,7 @@ func (s *Service) SyncTeamMap(ctx context.Context, desired map[string]set.Set) (
 				slog.Info("dry run: skipping team remove", "user", user, "team", slug)
 				continue
 			}
-			if err := s.api.RemoveTeamMembership(ctx, s.cfg.GitHubOrg, slug, user); err != nil {
+			if err := ops.remove(ctx, user); err != nil {
 				slog.Warn("skipping team remove", "user", user, "team", slug, "err", err)
 			}
 		}

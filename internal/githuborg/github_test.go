@@ -60,6 +60,36 @@ func (f *fakeAPI) RemoveTeamMembership(_ context.Context, _, _, u string) error 
 	return nil
 }
 
+// fakeEnterpriseAPI records enterprise team calls along with the enterprise
+// and team they targeted.
+type fakeEnterpriseAPI struct {
+	members map[string][]string // team slug -> logins
+	listed  []string            // "enterprise/team"
+	added   []string            // "enterprise/team/user"
+	removed []string            // "enterprise/team/user"
+	addErr  map[string]error
+	listErr error
+}
+
+func (f *fakeEnterpriseAPI) ListEnterpriseTeamMembers(_ context.Context, ent, team string) ([]string, error) {
+	f.listed = append(f.listed, ent+"/"+team)
+	if f.listErr != nil {
+		return nil, f.listErr
+	}
+	return f.members[team], nil
+}
+func (f *fakeEnterpriseAPI) AddEnterpriseTeamMember(_ context.Context, ent, team, u string) error {
+	if err := f.addErr[u]; err != nil {
+		return err
+	}
+	f.added = append(f.added, ent+"/"+team+"/"+u)
+	return nil
+}
+func (f *fakeEnterpriseAPI) RemoveEnterpriseTeamMember(_ context.Context, ent, team, u string) error {
+	f.removed = append(f.removed, ent+"/"+team+"/"+u)
+	return nil
+}
+
 func svc(api *fakeAPI, cfg *config.Config) *Service {
 	if cfg == nil {
 		cfg = &config.Config{GitHubOrg: "myorg", GitHubTeamSlug: "remarkable"}
@@ -313,5 +343,88 @@ func TestSyncTeamMapReturnsDriftFalseWhenInSync(t *testing.T) {
 	}
 	if drift {
 		t.Error("expected drift=false when team already matches group")
+	}
+}
+
+func TestSyncTeamMapEnterpriseTeam(t *testing.T) {
+	api := &fakeAPI{teamMembers: []string{"orgkeep"}}
+	ent := &fakeEnterpriseAPI{members: map[string][]string{"ent:platform": {"keep", "stale"}}}
+	cfg := &config.Config{
+		GitHubOrg: "myorg", GitHubEnterprise: "acme",
+		AddUsers: true, RemoveUsers: true, MaxRemoveUsers: 100,
+	}
+	s := &Service{cfg: cfg, api: api, ent: ent}
+	desired := map[string]set.Set{
+		"ent:platform": set.New("keep", "new"),
+		"eng":          set.New("orgkeep"),
+	}
+	drift, err := s.SyncTeamMap(context.Background(), desired)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !drift {
+		t.Error("expected drift=true")
+	}
+	if len(ent.listed) != 1 || ent.listed[0] != "acme/ent:platform" {
+		t.Errorf("listed = %v, want [acme/ent:platform]", ent.listed)
+	}
+	if len(ent.added) != 1 || ent.added[0] != "acme/ent:platform/new" {
+		t.Errorf("enterprise added = %v, want [acme/ent:platform/new]", ent.added)
+	}
+	if len(ent.removed) != 1 || ent.removed[0] != "acme/ent:platform/stale" {
+		t.Errorf("enterprise removed = %v, want [acme/ent:platform/stale]", ent.removed)
+	}
+	// The org team must not be touched by the enterprise entry.
+	if len(api.teamAdded) != 0 || len(api.teamRemoved) != 0 {
+		t.Errorf("org team changed: added=%v removed=%v", api.teamAdded, api.teamRemoved)
+	}
+}
+
+func TestSyncTeamMapEnterpriseRespectsGates(t *testing.T) {
+	// add-users off: non-org-member skipped. remove-users off: extras kept.
+	api := &fakeAPI{orgMembers: []string{"member"}}
+	ent := &fakeEnterpriseAPI{members: map[string][]string{"ent:platform": {"stale"}}}
+	s := &Service{cfg: &config.Config{GitHubOrg: "myorg", GitHubEnterprise: "acme"}, api: api, ent: ent}
+	_, err := s.SyncTeamMap(context.Background(), map[string]set.Set{
+		"ent:platform": set.New("member", "stranger"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ent.added) != 1 || ent.added[0] != "acme/ent:platform/member" {
+		t.Errorf("added = %v, want [acme/ent:platform/member]", ent.added)
+	}
+	if len(ent.removed) != 0 {
+		t.Errorf("removed = %v, want none (remove-users disabled)", ent.removed)
+	}
+}
+
+func TestSyncTeamMapEnterpriseDryRunAndContinuesPastErrors(t *testing.T) {
+	ent := &fakeEnterpriseAPI{
+		members: map[string][]string{"ent:platform": {}},
+		addErr:  map[string]error{"bad": errors.New("boom")},
+	}
+	s := &Service{cfg: &config.Config{GitHubOrg: "myorg", GitHubEnterprise: "acme", AddUsers: true}, api: &fakeAPI{}, ent: ent}
+	if _, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"ent:platform": set.New("bad", "good")}); err != nil {
+		t.Fatalf("per-user failure should not abort: %v", err)
+	}
+	if len(ent.added) != 1 || ent.added[0] != "acme/ent:platform/good" {
+		t.Errorf("added = %v, want [acme/ent:platform/good]", ent.added)
+	}
+
+	ent = &fakeEnterpriseAPI{members: map[string][]string{"ent:platform": {"stale"}}}
+	s = &Service{cfg: &config.Config{GitHubOrg: "myorg", GitHubEnterprise: "acme", AddUsers: true, RemoveUsers: true, MaxRemoveUsers: 100, DryRun: true}, api: &fakeAPI{}, ent: ent}
+	if _, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"ent:platform": set.New("new")}); err != nil {
+		t.Fatal(err)
+	}
+	if len(ent.added) != 0 || len(ent.removed) != 0 {
+		t.Errorf("dry run mutated enterprise team: added=%v removed=%v", ent.added, ent.removed)
+	}
+}
+
+func TestSyncTeamMapEnterpriseNotConfigured(t *testing.T) {
+	s := svc(&fakeAPI{}, &config.Config{GitHubOrg: "myorg", AddUsers: true})
+	if _, err := s.SyncTeamMap(context.Background(), map[string]set.Set{"ent:platform": set.New("a")}); err == nil {
+		t.Error("expected error when enterprise team is mapped without enterprise config")
 	}
 }

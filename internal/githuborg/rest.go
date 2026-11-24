@@ -99,3 +99,31 @@ func (r restAPI) RemoveTeamMembership(ctx context.Context, org, slug, username s
 	_, err := r.client.Teams.RemoveTeamMembershipBySlug(ctx, org, slug, username)
 	return err
 }
+
+func (r restAPI) ListEnterpriseTeamMembers(ctx context.Context, enterprise, team string) ([]string, error) {
+	opts := &github.ListOptions{PerPage: perPage}
+	var logins []string
+	for {
+		members, resp, err := r.client.Enterprise.ListTeamMembers(ctx, enterprise, team, opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range members {
+			logins = append(logins, m.GetLogin())
+		}
+		if resp.NextPage == 0 {
+			return logins, nil
+		}
+		opts.Page = resp.NextPage
+	}
+}
+
+func (r restAPI) AddEnterpriseTeamMember(ctx context.Context, enterprise, team, username string) error {
+	_, _, err := r.client.Enterprise.AddTeamMember(ctx, enterprise, team, username)
+	return err
+}
+
+func (r restAPI) RemoveEnterpriseTeamMember(ctx context.Context, enterprise, team, username string) error {
+	_, err := r.client.Enterprise.RemoveTeamMember(ctx, enterprise, team, username)
+	return err
+}

@@ -51,10 +51,16 @@ inputs:
     description: 'Slug of the team that every org member should be added to (e.g. remarkable)'
     required: false
   team-map:
-    description: 'Inline JSON object mapping a Google Workspace group email to a GitHub team slug, e.g. {"engineering@remarkable.no":"engineering"}. Members of each group are synced into the mapped team. Prefer team-map-file for maintainability. team-map-file takes precedence when both are set.'
+    description: 'Inline JSON object mapping a Google Workspace group email to a GitHub team slug, e.g. {"engineering@remarkable.no":"engineering"}. Use an enterprise team slug (GitHub prefixes these with "ent:", e.g. "ent:platform") to target an enterprise team (requires github-enterprise and github-enterprise-installation-id). Members of each group are synced into the mapped team. Prefer team-map-file for maintainability. team-map-file takes precedence when both are set.'
     required: false
   team-map-file:
     description: 'Path to a JSON file mapping Google Workspace group emails to GitHub team slugs. Members of each group are synced into the mapped team.'
+    required: false
+  github-enterprise:
+    description: 'Enterprise slug owning the enterprise teams referenced in the team map by their "ent:" slug (e.g. {"platform@remarkable.no":"ent:platform"}). Required only when mapping enterprise teams.'
+    required: false
+  github-enterprise-installation-id:
+    description: 'Installation ID of the same GitHub App installed on the enterprise, with the "Enterprise teams" read/write permission. Required only when mapping enterprise teams.'
     required: false
   debug:
     description: 'Set to TRUE to enable debug level logging'
