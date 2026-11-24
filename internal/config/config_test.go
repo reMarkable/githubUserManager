@@ -209,3 +209,72 @@ func TestTeamMapFileInvalidJSON(t *testing.T) {
 		t.Error("expected error for invalid JSON in team-map-file")
 	}
 }
+
+func TestTeamMapEnterpriseTeams(t *testing.T) {
+	inputs := validInputs()
+	inputs["github-enterprise"] = "acme"
+	inputs["github-enterprise-installation-id"] = "789"
+	inputs["team-map"] = `{"a@x":"ent:platform","b@x":" ent:infra ","d@x":"ent:","e@x":"eng"}`
+	cfg, err := Load(inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"a@x": "ent:platform",
+		"b@x": "ent:infra",
+		"e@x": "eng",
+	}
+	if !reflect.DeepEqual(cfg.TeamMap, want) {
+		t.Errorf("TeamMap = %v, want %v", cfg.TeamMap, want)
+	}
+	if cfg.GitHubEnterprise != "acme" || cfg.GitHubEnterpriseInstallationID != 789 {
+		t.Errorf("enterprise = %q/%d, want acme/789", cfg.GitHubEnterprise, cfg.GitHubEnterpriseInstallationID)
+	}
+	if !cfg.HasEnterpriseTeams() {
+		t.Error("HasEnterpriseTeams should be true")
+	}
+}
+
+func TestParseTeamRef(t *testing.T) {
+	cases := map[string]TeamRef{
+		"eng":          {Slug: "eng"},
+		"ent:platform": {Enterprise: true, Slug: "ent:platform"},
+	}
+	for in, want := range cases {
+		if got := ParseTeamRef(in); got != want {
+			t.Errorf("ParseTeamRef(%q) = %+v, want %+v", in, got, want)
+		}
+	}
+}
+
+func TestEnterpriseTeamsRequireEnterpriseConfig(t *testing.T) {
+	inputs := validInputs()
+	inputs["team-map"] = `{"a@x":"ent:platform"}`
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error when github-enterprise is missing")
+	}
+	inputs["github-enterprise"] = "acme"
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error when github-enterprise-installation-id is missing")
+	}
+	inputs["github-enterprise-installation-id"] = "nope"
+	if _, err := Load(inputs); err == nil {
+		t.Error("expected error for non-numeric github-enterprise-installation-id")
+	}
+	inputs["github-enterprise-installation-id"] = "789"
+	if _, err := Load(inputs); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestOrgOnlyTeamMapNeedsNoEnterpriseConfig(t *testing.T) {
+	inputs := validInputs()
+	inputs["team-map"] = `{"a@x":"eng"}`
+	cfg, err := Load(inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.HasEnterpriseTeams() {
+		t.Error("HasEnterpriseTeams should be false")
+	}
+}
